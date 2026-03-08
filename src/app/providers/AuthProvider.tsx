@@ -81,7 +81,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 			const res = await login(email, password);
 
 			if (!res.ok) {
-				throw new Error(res.error ?? "Login failed");
+				throw new Error(res.message ?? "Login failed");
 			}
 
 			// set the user
@@ -108,7 +108,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 			const res = await register(email, name, password)
 
 			if (!res.ok) {
-				throw new Error(res.error ?? "Signup failed");
+				throw new Error(res.message ?? "Signup failed");
 			}
 
 			router.push('/login');
