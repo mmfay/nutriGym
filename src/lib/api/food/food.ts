@@ -89,3 +89,10 @@ export async function getMacroData(photo: Blob): Promise<ApiResult<FoodMacros>> 
 	fd.append("image", photo, "photo.jpg");
 	return postFormData("/api/food/image", fd);
 }
+
+/**
+ * Get Remaining AI Requests
+ */
+export async function getRemainingAIRequests(): Promise<ApiResult<{requests: number}>> {
+	return getJSON("/api/food/image");
+}
