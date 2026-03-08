@@ -164,3 +164,12 @@ CREATE OR REPLACE VIEW food_log_v AS
 		END                      AS servings_equivalent
 	FROM food_tracker ft
 	JOIN food f ON f.id = ft.food_id;
+
+create table ai_daily_usage (
+	user_id     uuid not null,
+	usage_date  date not null,
+	used_count  int not null default 0,
+	updated_at  timestamptz not null default now(),
+	primary key (user_id, usage_date),
+	check (used_count >= 0)
+);
