@@ -7,6 +7,8 @@ import AddFoodToLog from "@/app/components/Modals/AddFoodToLog";
 import AddFood from "@/app/components/Modals/AddFood";
 import { useFoodController } from "@/lib/hooks/useFoodController";
 import Tag from "@/app/components/Tag";
+import MacroAI from "@/app/components/Modals/MacroAI";
+import { getRemainingAIRequests } from "@/lib/api/food/food";
 
 // ---------- Types ----------
 type Mode = "recent" | "all";
@@ -37,7 +39,7 @@ function nameIncludes(f: Food, q: string) {
 }
 
 // ---------- Component ----------
-export default function FoodPicker() {
+export default function FoodTracker() {
 
 	// controllers
 	const fc = useFoodController();
@@ -50,9 +52,6 @@ export default function FoodPicker() {
 
 	const mealId = useMemo(() => MEALS.indexOf(recentMealFilter), [recentMealFilter]);
 
-	// Bottom sheet
-	const [sheet, setSheet] = useState<{ open: boolean; food?: Food }>({ open: false });
-
 	// Recents fetched from backend
 	const [date, setDate] = useState<string>(todayLocalISO());
 	const [foods, setFoods] = useState<Food[]>();
@@ -62,7 +61,10 @@ export default function FoodPicker() {
 		// run only on client
 		setRecentMealFilter(mealForNow());
 		setDate(todayLocalISO());
+		fc.getAIRequests();
 	}, []);
+
+
 
 	const grouped = useMemo(() => {
 
@@ -156,21 +158,7 @@ export default function FoodPicker() {
 		const q = query.toLowerCase().trim();
 		return q ? listAll.filter(f => nameIncludes(f, q)) : listAll;
 	}, [query, foods]);
-	/*
-	async function ensureRecents(meal: Meal) {
-		if (recentsByMeal[meal]?.length) return;
-		setLoadingRecents(p => ({ ...p, [meal]: true }));
-		setErrorRecents(p => ({ ...p, [meal]: undefined }));
-		try {
-		const items = await fetchRecentByMeal(meal);
-		setRecentsByMeal(p => ({ ...p, [meal]: items }));
-		} catch (e: any) {
-		setErrorRecents(p => ({ ...p, [meal]: e?.message ?? "Failed to load recents" }));
-		} finally {
-		setLoadingRecents(p => ({ ...p, [meal]: false }));
-		}
-	}
-	*/
+
 	// add a food to the users food log
 	async function addFood(food: Food, meal: Meal, servings = 1) {
 
@@ -201,6 +189,13 @@ export default function FoodPicker() {
 					className="inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"
 				>
 					+ New Food
+				</button>
+				<button
+					disabled={fc.remainingAIRequests == 0}
+					onClick={fc.openMacroAIModal}
+					className="inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"
+				>
+					+ Use AI
 				</button>
 				</div>
 
@@ -330,39 +325,43 @@ export default function FoodPicker() {
 				const totalKcal = items.reduce((s, x) => s + Number(x.food.calories) * x.servings, 0);
 
 				return (
-				<div
-					key={m}
-					className="rounded-xl overflow-hidden bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700"
-				>
-					{/* Colored header */}
-					<div className={["px-4 py-2 border-b", c.bg, c.border].join(" ")}>
-					<div className="flex items-center justify-between">
-						<h2 className={["font-semibold capitalize", c.text].join(" ")}>{m}</h2>
-						<span className={["text-xs", c.muted].join(" ")}>{totalKcal} kcal</span>
-					</div>
-					</div>
+					<div
+						key={m}
+						className="rounded-xl overflow-hidden bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700"
+					>
+						{/* Colored header */}
+						<div className={["px-4 py-2 border-b", c.bg, c.border].join(" ")}>
+						<div className="grid grid-cols-[1fr_auto_1fr] items-center">
+							{/* Left */}
+							<h2 className={["font-semibold capitalize", c.text].join(" ")}>{m}</h2>
+							{/* Right */}
+							<span className={["justify-self-end text-xs tabular-nums", c.muted].join(" ")}>
+							{totalKcal} kcal
+							</span>
+						</div>
+						</div>
 
-					{/* Tag list */}
-					<div className="p-4">
-					{items.length === 0 ? (
-						<div className="text-xs text-gray-500 italic">
-						Tap a “+ {m}” chip on a food to add it here.
+						{/* Tag list */}
+						<div className="p-4">
+						{items.length === 0 ? (
+							<div className="text-xs text-gray-500 italic">
+							Tap a “+ {m}” chip on a food to add it here.
+							</div>
+						) : (
+							<div className="flex flex-wrap gap-2">
+							{items.map((x, i) => (
+								<Tag
+								key={`${x.food.id}-${i}`}
+								label={`${x.food.name} × ${x.servings}`}
+								sub={`${Number(x.food.calories) * x.servings} kcal`}
+								colorClasses={`${c.border} ${c.text}`}
+								onRemove={() => fc.removeFoodLog(x.food.id)}
+								/>
+							))}
+							</div>
+						)}
 						</div>
-					) : (
-						<div className="flex flex-wrap gap-2">
-						{items.map((x, i) => (
-							<Tag
-							key={`${x.food.id}-${i}`}
-							label={`${x.food.name} × ${x.servings}`}
-							sub={`${Number(x.food.calories) * x.servings} kcal`}
-							colorClasses={`${c.border} ${c.text}`}
-							onRemove={() => fc.removeFoodLog(x.food.id)}
-							/>
-						))}
-						</div>
-					)}
 					</div>
-				</div>
 				);
 			})}
 			</div>
@@ -379,6 +378,12 @@ export default function FoodPicker() {
 				logDate={date}
 				onClose={fc.closeFoodLogModal}
 				onLog={fc.onLogFood}
+			/>
+			<MacroAI
+				isOpen={fc.macroAIModalOpen}
+				onClose={fc.closeMacroAIModal}
+				onLog={fc.onLogFood}
+				onDate={date}
 			/>
 		</div>
 		</div>
@@ -439,113 +444,6 @@ function FoodCard({
   );
 }
 
-
-
 function Empty({ label }: { label: string }) {
   return <div className="text-sm text-gray-500 italic">{label}</div>;
-}
-
-/* ========= Scroll/lock-fixed AddSheet ========= */
-function AddSheet({
-  title, onClose, onAdd
-}: {
-  title: string;
-  onClose: () => void;
-  onAdd: (meal: Meal, servings: number) => void;
-}) {
-  const [meal, setMeal] = useState<Meal>(mealForNow());
-  const [servings, setServings] = useState(1);
-
-  // 🔒 Lock background scroll (iOS-safe)
-  useEffect(() => {
-    const y = window.scrollY || document.documentElement.scrollTop;
-    const prev = {
-      position: document.body.style.position,
-      top: document.body.style.top,
-      left: document.body.style.left,
-      width: document.body.style.width,
-      overflowY: document.body.style.overflowY,
-    };
-    document.body.style.position = "fixed";
-    document.body.style.top = `-${y}px`;
-    document.body.style.left = "0";
-    document.body.style.width = "100%";
-    document.body.style.overflowY = "hidden";
-    return () => {
-      document.body.style.position = prev.position;
-      document.body.style.top = prev.top;
-      document.body.style.left = prev.left;
-      document.body.style.width = prev.width;
-      document.body.style.overflowY = prev.overflowY;
-      window.scrollTo(0, y);
-    };
-  }, []);
-
-  return (
-    <div
-      className="
-        fixed inset-0 z-50
-        flex items-end md:items-center justify-center
-        bg-black/40
-        overflow-y-auto overscroll-contain
-        p-4
-      "
-      role="dialog"
-      aria-modal="true"
-    >
-      <div
-        className="
-          w-full md:max-w-md
-          bg-white dark:bg-gray-800 rounded-t-2xl md:rounded-2xl
-          p-4
-          max-h-[85vh] overflow-y-auto
-          border border-gray-200 dark:border-gray-700
-        "
-      >
-        <div className="flex items-center justify-between sticky top-0 bg-white dark:bg-gray-800 pb-2">
-          <h3 className="font-semibold">{title}</h3>
-          <button onClick={onClose} className="text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
-            Close
-          </button>
-        </div>
-
-        <div className="mt-3">
-          <label className="block text-sm mb-1">Meal</label>
-          <div className="grid grid-cols-4 gap-2">
-            {MEALS.map(m => {
-              const c = mealColors[m];
-              const active = meal === m;
-              return (
-                <button
-                  key={m}
-                  onClick={() => setMeal(m)}
-                  className={[
-                    "px-2 py-2 rounded text-sm capitalize border transition",
-                    active ? `${c.bg} ${c.text} ${c.border} ring-2 ${c.ring}`
-                           : "bg-gray-100 dark:bg-gray-700 border-gray-200 dark:border-gray-600"
-                  ].join(" ")}
-                >
-                  {m}
-                </button>
-              );
-            })}
-          </div>
-
-          <label className="block text-sm mt-4 mb-1">Servings</label>
-          <div className="inline-flex items-center gap-2">
-            <button onClick={() => setServings(s => Math.max(0.5, +(s - 0.5).toFixed(1)))} className="px-3 py-2 rounded bg-gray-100 dark:bg-gray-700">-</button>
-            <span className="w-12 text-center">{servings}</span>
-            <button onClick={() => setServings(s => +(s + 0.5).toFixed(1))} className="px-3 py-2 rounded bg-gray-100 dark:bg-gray-700">+</button>
-          </div>
-
-          <button
-            onClick={() => onAdd(meal, servings)}
-            className="mt-4 w-full py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700"
-          >
-            Add
-          </button>
-        </div>
-      </div>
-    </div>
-  );
 }

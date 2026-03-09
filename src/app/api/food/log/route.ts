@@ -1,41 +1,40 @@
 // app/api/weight/add/route.ts
-import { logFood, getFoodLog, removeFood } from "@/lib/services/tracking";
+import { logFood, getFoodLog, removeFood, logAIFood } from "@/lib/services/tracking";
 import { Food } from "@/lib/dataTypes";
 import { ResponseBuilder as R } from "@/lib/utils/response";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 import { getUser, SESSION_COOKIE } from "@/lib/auth/session";
+import { getUserID } from "@/lib/services/user";
 
 export async function POST(req: Request) {
 
-	const userid = await getUser();
-	const userId = userid?.id; 
-
-	// if no user is clear cookie and return unauthenticated
-	if (!userId) {
-
-		const res = R.unauthorized();
-
-		// Optional: clear stale cookie so clients don’t keep sending it
-		res.cookies.set(SESSION_COOKIE, "", { httpOnly: true, secure: true, sameSite: "lax", path: "/", maxAge: 0 });
-		return res;
-
-	}
-
-	const { foodItem, meal, loggedDate } = (await req.json()) as {
-		foodItem: Food;
-		meal: number;
-		loggedDate: Date;
-	};
-
 	try {
+		
+		const userId = await getUserID();
+	
+		const { foodItem, meal, loggedDate } = (await req.json()) as {
+			foodItem: Food;
+			meal: number;
+			loggedDate: Date;
+		};
+
+		if (foodItem.isAI) {
+			const aiFood = await logAIFood(userId, meal, loggedDate, foodItem);
+			return R.ok(aiFood, "AI Food Tracked Successfully");
+		} 
+
 		const newLog = await logFood(userId, meal, loggedDate, foodItem);
 		return R.ok(newLog, "Food Tracked Successfully");
+
 	} catch (err) {
+
 		console.log(err);
-		return R.serverError("Error Loggin Food");
+		if (err instanceof Response) return err;
+
+		return R.serverError("Error Tracking Food");
+
 	}
-		
 	
 }
 

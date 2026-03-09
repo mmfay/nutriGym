@@ -1,6 +1,6 @@
-import { Food, FoodTracked, FoodCreate} from "@/lib/dataTypes";
+import { Food, FoodTracked, FoodCreate, FoodMacros} from "@/lib/dataTypes";
 
-import { postJSON, getJSON, deleteJSON } from "../submissions";
+import { postJSON, getJSON, deleteJSON, postFormData } from "../submissions";
 import { ApiResult } from "@/lib/dataTypes/results";
 
 // fetches weekly macro trend
@@ -79,4 +79,20 @@ export async function deleteFoodLog(id: number): Promise<ApiResult<FoodTracked[]
  */
 export async function getRecentFoods(meal: number): Promise<ApiResult<Food[]>> {
 	return getJSON("/api/food/recent", { meal });
+}
+
+/**
+ * Post Photo to AI to get Macros
+ */
+export async function getMacroData(photo: Blob): Promise<ApiResult<FoodMacros>> {
+	const fd = new FormData();
+	fd.append("image", photo, "photo.jpg");
+	return postFormData("/api/food/image", fd);
+}
+
+/**
+ * Get Remaining AI Requests
+ */
+export async function getRemainingAIRequests(): Promise<ApiResult<{requests: number}>> {
+	return getJSON("/api/food/image");
 }

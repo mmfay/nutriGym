@@ -54,7 +54,7 @@ export interface HomePayload {
 }
 
 export type Food = {
-	id: number,
+	id: number | null,
 	name: string,
 	brand: string,
 	calories: number,
@@ -65,7 +65,16 @@ export type Food = {
 	serving_unit: string,
 	serving_metric_size?: number; // e.g. 228
 	serving_metric_unit?: "g" | "ml";
+	isAI?: boolean;
 }
+
+export type FoodMacros = {
+	foodName: string;
+	calories: number;
+	protein: number;
+	carbs: number;
+	fat: number;
+};
 
 export type FoodTracked = {
     id: number,
@@ -78,7 +87,8 @@ export type FoodTracked = {
 	protein: number,
 	calories: number,
     serving_size: number,
-    serving_unit: string
+    serving_unit: string,
+	isAI?: boolean
 }
 
 export type FoodCreate = {

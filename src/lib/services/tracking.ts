@@ -1,6 +1,7 @@
 // lib/services/food.ts
 import pool from "@/lib/db/db";
 import { Food, FoodTracked } from "../dataTypes";
+import { ResponseBuilder as R } from "../utils/response";
 
 // allows for user to log food
 export async function logFood(userId: string, meal: number, date: Date, food: Food): Promise<FoodTracked> {
@@ -32,21 +33,21 @@ export async function logFood(userId: string, meal: number, date: Date, food: Fo
 
 		// read the row from the view
 		const selectSql = `
-		SELECT 
-			v.id,
-			v.meal,
-			v.food_name as name,
-			v.brand,
-			v.recorded_at,
-			v.carbs,
-			v.fat,
-			v.protein,
-			v.calories,
-			v.serving_size,
-			v.serving_unit
-		FROM food_log_v v
-		WHERE v.user_id = $1 AND v.id = $2
-		LIMIT 1;
+			SELECT 
+				v.id,
+				v.meal,
+				v.food_name as name,
+				v.brand,
+				v.recorded_at,
+				v.carbs,
+				v.fat,
+				v.protein,
+				v.calories,
+				v.serving_size,
+				v.serving_unit
+			FROM food_log_v v
+			WHERE v.user_id = $1 AND v.id = $2
+			LIMIT 1;
 		`;
 		const sel = await client.query<FoodTracked>(selectSql, [userId, newId]);
 		if (sel.rowCount !== 1) throw new Error("Insert succeeded but joined row not found.");
@@ -61,6 +62,82 @@ export async function logFood(userId: string, meal: number, date: Date, food: Fo
 	}
 }
 
+export async function logAIFood(
+	userId: string,
+	meal: number,
+	date: Date,
+	food: Food
+): Promise<FoodTracked> {
+
+	const client = await pool.connect();
+
+	try {
+		await client.query("BEGIN");
+
+		const insertSql = `
+			INSERT INTO food_tracker (
+				user_id,
+				recorded_at,
+				meal,
+				food_id,
+				calories,
+				carbs,
+				fat,
+				protein,
+				serving_size,
+				serving_unit,
+				food_name,
+				isAI
+			)
+			VALUES (
+				$1,
+				$2,
+				$3,
+				NULL,
+				$4,
+				$5,
+				$6,
+				$7,
+				$8,
+				$9,
+				$10,
+				$11
+			)
+			RETURNING id;
+		`;
+
+		const insertParams = [
+			userId,
+			date,
+			meal,
+			food.calories,
+			food.carbs,
+			food.fat,
+			food.protein,
+			food.serving_size,
+			food.serving_unit,
+			food.name,
+			food.isAI,
+		];
+
+		const ins = await client.query<{ id: number }>(insertSql, insertParams);
+
+		if (ins.rowCount !== 1) {
+			throw R.serverError("Failed to log AI food");
+		}
+
+		const newId = ins.rows[0].id;
+		const trackedFood = await getTrackedFood(userId, newId, client);
+
+		await client.query("COMMIT");
+		return trackedFood;
+	} catch (e) {
+		await client.query("ROLLBACK");
+		throw e;
+	} finally {
+		client.release();
+	}
+}
 
 // allows for user to get log of food
 export async function getFoodLog(userId: string, date: string) {
@@ -105,4 +182,39 @@ export async function removeFood(userId: string, id: number) {
 	
 	return;
 
+}
+
+export async function getTrackedFood(
+	userId: string,
+	id: number,
+	clientArg?: { query: typeof pool.query }
+): Promise<FoodTracked> {
+
+	const db = clientArg ?? pool;
+
+	const sql = `
+		SELECT 
+			v.id,
+			v.meal,
+			v.food_name as name,
+			v.brand,
+			v.recorded_at,
+			v.carbs,
+			v.fat,
+			v.protein,
+			v.calories,
+			v.serving_size,
+			v.serving_unit
+		FROM food_log_v v
+		WHERE v.user_id = $1 AND v.id = $2
+		LIMIT 1;
+	`;
+
+	const result = await db.query<FoodTracked>(sql, [userId, id]);
+
+	if (result.rowCount !== 1) {
+		throw R.serverError("Tracked food not found.");
+	}
+
+	return result.rows[0];
 }
