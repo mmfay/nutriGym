@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 export default function LandingPage() {
 	return (
@@ -19,7 +20,7 @@ export default function LandingPage() {
 					<br className="hidden sm:block" /> hit your macro goals with clarity.
 				</h1>
 				<p className="text-lg text-slate-600 dark:text-slate-300 max-w-xl">
-					NutriGym brings barcode scanning (mobile soon), lightning‑fast food search, custom meals & recipes, and focused insights into a clean, no‑nonsense workspace.
+					NutriGym brings barcode scanning, lightning‑fast food search, and focused insights into a clean, no‑nonsense workspace.
 				</p>
 				<div className="flex flex-col sm:flex-row gap-3">
 					<Link href="/signup" className="inline-flex items-center justify-center rounded-xl bg-slate-900 text-white px-5 py-3 font-medium shadow-lg shadow-slate-900/10 hover:opacity-95 active:opacity-90">
@@ -33,37 +34,18 @@ export default function LandingPage() {
 				<div className="flex flex-wrap items-center gap-6 text-xs text-slate-500 dark:text-slate-400 pt-2">
 					<div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-emerald-500" /> Instant logging</div>
 					<div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-sky-500" /> Macro insights</div>
-					<div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-fuchsia-500" /> Offline‑friendly</div>
+					<div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-fuchsia-500" /> AI Enabled</div>
 				</div>
 				</div>
 
 				{/* Mock screenshot card */}
-				<div className="relative">
-				<div className="absolute -inset-2 rounded-3xl bg-gradient-to-tr from-slate-200 to-slate-100 dark:from-slate-800 dark:to-slate-900 blur-xl opacity-60" aria-hidden />
-				<div className="relative rounded-3xl border border-slate-200/60 dark:border-slate-700/60 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl shadow-2xl overflow-hidden">
-					<div className="aspect-[16/10] w-full">
-					{/* Replace this placeholder with an <Image /> or live preview */}
-					<div className="h-full w-full grid grid-cols-12">
-						<div className="col-span-4 border-r border-slate-200/60 dark:border-slate-800/60 p-6">
-						<div className="h-6 w-24 rounded bg-slate-200 dark:bg-slate-800 mb-4" />
-						<div className="space-y-3">
-							{[...Array(7)].map((_, i) => (
-							<div key={i} className="h-3 w-10/12 rounded bg-slate-200 dark:bg-slate-800" />
-							))}
-						</div>
-						</div>
-						<div className="col-span-8 p-6">
-						<div className="h-8 w-40 rounded bg-slate-200 dark:bg-slate-800 mb-6" />
-						<div className="space-y-4">
-							{[...Array(5)].map((_, i) => (
-							<div key={i} className="h-20 w-full rounded-xl border border-slate-200 dark:border-slate-800" />
-							))}
-						</div>
-						</div>
-					</div>
-					</div>
-				</div>
-				</div>
+				<Image
+					src="/dashboard.png"
+					alt="NutriGym dashboard preview"
+					width={900}
+					height={600}
+					className="rounded-xl shadow-2xl border border-white/10"
+				/>
 			</div>
 			</div>
 		</section>
@@ -74,10 +56,10 @@ export default function LandingPage() {
 			{[
 				{
 				title: "Fast food search",
-				body: "Search across a clean database with smart synonyms and quick‑add macros.",
+				body: "Search across a clean database with quick‑add macros.",
 				},
 				{
-				title: "Custom meals & recipes",
+				title: "Coming Soon: Custom meals & recipes",
 				body: "Save your go‑tos, batch cook, and reuse with one tap.",
 				},
 				{
@@ -85,16 +67,12 @@ export default function LandingPage() {
 				body: "Set calorie/macro targets and see simple, actionable trends.",
 				},
 				{
-				title: "Barcode scanning (mobile)",
-				body: "Use your phone’s camera in the Expo app to scan and log instantly.",
+				title: "Barcode scanning",
+				body: "Use your phone’s camera to scan and log instantly.",
 				},
 				{
-				title: "Offline‑friendly",
-				body: "Keep logging even on spotty connections; sync when you’re back.",
-				},
-				{
-				title: "Privacy‑first",
-				body: "Your data stays yours. Clear controls for export and deletion.",
+				title: "AI Enabled",
+				body: "Use AI to calculate macros during your favorite meals.",
 				},
 			].map((f) => (
 				<div key={f.title} className="relative">
@@ -114,7 +92,7 @@ export default function LandingPage() {
 			<h2 className="text-2xl font-semibold text-slate-900 dark:text-white">How it works</h2>
 			<ol className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
 				{[
-				{ step: "1", title: "Set your goal", body: "Choose calories & macros; we create sensible defaults you can tweak." },
+				{ step: "1", title: "Set your goal", body: "Choose calories & macros." },
 				{ step: "2", title: "Log quickly", body: "Search or scan; recent foods and saved meals make it instant." },
 				{ step: "3", title: "See progress", body: "Get clean visuals and nudges to help you stay consistent." },
 				].map((s) => (
