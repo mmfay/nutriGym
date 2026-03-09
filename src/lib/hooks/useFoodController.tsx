@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { createFood, logFood, fetchFoodLog, deleteFoodLog, getRecentFoods, searchFood } from "../api/food/food";
+import { createFood, logFood, fetchFoodLog, deleteFoodLog, getRecentFoods, searchFood, getRemainingAIRequests } from "../api/food/food";
 import { FoodCreate, Food, FoodTracked } from "../dataTypes";
 
 export type FoodsController = {
@@ -14,12 +14,14 @@ export type FoodsController = {
 	loadingRecents: Partial<Record<number, boolean>>;
 	errorRecents: Partial<Record<number, string>>;
 	selectedFoodToLog: Food | null;
+	remainingAIRequests: number;
 
 	onCreate: (food: FoodCreate) => Promise<Food>;
 	onSearch: (text: string) => Promise<Food[]>;
 	onLogFood: (food: Food, meal: number, date: string) => Promise<void>;
 	getFoodLog: (logDate: string) => Promise<void>;
 	getRecents: (meal: number) => Promise<void>;
+	getAIRequests: () => Promise<void>;
 	removeFoodLog: (id: number) => Promise<void>;
 
 	openFoodModal: () => void;
@@ -28,8 +30,12 @@ export type FoodsController = {
 	openFoodLogModal: (food: Food) => void;
 	closeFoodLogModal: () => void;
 
+	openMacroAIModal: () => void;
+	closeMacroAIModal: () => void;
+
 	foodModalOpen: boolean;
 	foodLogModalOpen: boolean;
+	macroAIModalOpen: boolean;
 };
 
 export function useFoodController(): FoodsController {
@@ -39,8 +45,12 @@ export function useFoodController(): FoodsController {
 
 	const [foodModalOpen, setFoodModalOpen] = useState(false);
 	const [foodLogModalOpen, setFoodLogModalOpen] = useState(false);
+	const [macroAIModalOpen, setMacroAIModealOpen] = useState(false);
 
 	const [selectedFoodToLog, setSelectedFoodToLog] = useState<Food | null>(null);
+
+	// tracks how many open AI Requests a user has on the front end, so functions can be disabled.
+	const [remainingAIRequests, setRemainingAIRequests] = useState(0);
 
 	// data states
 	const [trackedFood, setTrackedFood] = useState<FoodTracked[]>([]);
@@ -77,8 +87,9 @@ export function useFoodController(): FoodsController {
 
 	// create a food item
 	const onCreate = useCallback(async (food: FoodCreate): Promise<Food> => {
+
 		if (!food || Object.keys(food).length === 0) {
-		throw new Error("No fields provided to update.");
+			throw new Error("No fields provided to update.");
 		}
 
 		setError(null);
@@ -86,12 +97,31 @@ export function useFoodController(): FoodsController {
 		const res = await createFood(food);
 
 		if (!res.ok) {
-			setError(res.error);
-			throw new Error(res.error);
+			setError(res.message);
+			throw new Error(res.message);
 		}
 
 		return res.data as Food;
+
 	}, []);
+
+	// retrieves AI Requests remaining. 
+	const getAIRequests = useCallback ( async (): Promise<void> => {
+
+		setLoading(true);
+		setError(null);
+
+		const res = await getRemainingAIRequests();
+
+		if (!res.ok) {
+			setLoading(false);
+			setError(res.message);
+			throw new Error(res.message);
+		}
+
+		setRemainingAIRequests(res.data?.requests ?? 0);
+
+	}, [])
 
 	// logs a food item
 	const onLogFood = useCallback(
@@ -108,8 +138,8 @@ export function useFoodController(): FoodsController {
 
 			if (!res.ok) {
 				setLoading(false);
-				setError(res.error);
-				throw new Error(res.error);
+				setError(res.message);
+				throw new Error(res.message);
 			}
 
 			const data = res.data;
@@ -121,6 +151,7 @@ export function useFoodController(): FoodsController {
 
 			setTrackedFood((prev) => [...prev, data]);
 			setLoading(false);
+			getAIRequests();
 		},
 		[]
 	);
@@ -135,13 +166,14 @@ export function useFoodController(): FoodsController {
 		if (!aliveRef.current) return;
 
 		if (!res.ok) {
-		setError(res.error);
-		setLoading(false);
-		return;
+			setError(res.message);
+			setLoading(false);
+			return;
 		}
 
 		setTrackedFood((res.data as FoodTracked[]) ?? []);
 		setLoading(false);
+		
 	}, []);
 
 	// get recent foods (cached per meal)
@@ -164,7 +196,7 @@ export function useFoodController(): FoodsController {
 		if (!aliveRef.current) return;
 
 		if (!res.ok) {
-			setErrorRecents((p) => ({ ...p, [meal]: res.error }));
+			setErrorRecents((p) => ({ ...p, [meal]: res.message }));
 			setLoadingRecents((p) => ({ ...p, [meal]: false }));
 			return;
 		}
@@ -183,7 +215,7 @@ export function useFoodController(): FoodsController {
 		const res = await deleteFoodLog(id);
 
 		if (!res.ok) {
-			setError(res.error);
+			setError(res.message);
 			setLoading(false);
 			return;
 		}
@@ -199,8 +231,8 @@ export function useFoodController(): FoodsController {
 			const res = await searchFood(text);
 							
 			if (!res.ok) {
-				setError(res.error);
-				throw new Error(res.error);
+				setError(res.message);
+				throw new Error(res.message);
 			}
 			
 			return res.data as Food[];
@@ -229,6 +261,16 @@ export function useFoodController(): FoodsController {
 		setFoodLogModalOpen(false);
 	}
 
+	// opens food modal
+	function openMacroAIModal() {
+		setMacroAIModealOpen(true);
+	}
+
+	// closes food modal
+	function closeMacroAIModal() {
+		setMacroAIModealOpen(false);
+	}
+
 	return {
 		loading,
 		error,
@@ -237,9 +279,11 @@ export function useFoodController(): FoodsController {
 		errorRecents,
 		loadingRecents,
 		selectedFoodToLog,
+		remainingAIRequests,
 		onCreate,
 		onSearch,
-		onLogFood,
+		onLogFood,		
+		getAIRequests,
 		removeFoodLog,
 		getFoodLog,
 		getRecents,
@@ -247,7 +291,10 @@ export function useFoodController(): FoodsController {
 		closeFoodModal,
 		openFoodLogModal,
 		closeFoodLogModal,
+		openMacroAIModal,
+		closeMacroAIModal,
 		foodModalOpen,
 		foodLogModalOpen,
+		macroAIModalOpen
 	};
 }

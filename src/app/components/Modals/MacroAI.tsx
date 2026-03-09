@@ -2,17 +2,15 @@
 
 import { useEffect, useRef, useState } from "react";
 import { getMacroData } from "@/lib/api/food/food";
-import { FoodMacros } from "@/lib/dataTypes";
+import { Food, FoodMacros } from "@/lib/dataTypes";
+import { MEALS, mealColors } from "@/lib/ui/mealColors";
+import { Meal, mealForNow } from "@/lib/utils/meal";
 
 type MacroAIProps = {
 	isOpen: boolean;
 	onClose: () => void;
-
-	onConfirm?: (payload: {
-		description: string;
-		macros: FoodMacros;
-		image?: Blob | null;
-	}) => Promise<void> | void;
+	onLog: (food: Food, meal: number, date: string) => Promise<void>;
+	onDate: string;
 };
 
 type Step = "capture" | "review";
@@ -39,7 +37,7 @@ function canvasToBlob(
 
 }
 
-export default function MacroAI({ isOpen, onClose, onConfirm }: MacroAIProps) {
+export default function MacroAI({ isOpen, onClose, onLog, onDate }: MacroAIProps) {
 	
 	const videoRef = useRef<HTMLVideoElement | null>(null);
 	const streamRef = useRef<MediaStream | null>(null);
@@ -56,7 +54,16 @@ export default function MacroAI({ isOpen, onClose, onConfirm }: MacroAIProps) {
 	const [step, setStep] = useState<Step>("capture");
 	const [description, setDescription] = useState("");
 
+	const [selectedMeal, setSelectedMeal] = useState<Meal>(mealForNow());
+	const [date, setDate] = useState<string>(onDate);
+
+	const labelBase = "block text-sm font-medium text-slate-800 dark:text-slate-200 mb-1";
+
+	const mealToId = (m: Meal) => MEALS.indexOf(m);
+
+	// when effect is opened
 	useEffect(() => {
+
 		if (!isOpen) return;
 
 		// reset state on open
@@ -66,6 +73,7 @@ export default function MacroAI({ isOpen, onClose, onConfirm }: MacroAIProps) {
 		setMacros(null);
 		setDescription("");
 		setStep("capture");
+		setSelectedMeal(mealForNow());
 
 		if (photoUrl) URL.revokeObjectURL(photoUrl);
 		setPhotoUrl(null);
@@ -74,8 +82,8 @@ export default function MacroAI({ isOpen, onClose, onConfirm }: MacroAIProps) {
 		const t = setTimeout(() => startCamera(), 0);
 
 		return () => {
-		clearTimeout(t);
-		stopCamera();
+			clearTimeout(t);
+			stopCamera();
 		};
 		
 	}, [isOpen]);
@@ -93,17 +101,29 @@ export default function MacroAI({ isOpen, onClose, onConfirm }: MacroAIProps) {
 
 	// start camera
 	async function startCamera() {
-
 		setStarting(true);
 		setError(null);
 
 		try {
 			await stopCamera();
 
-			const stream = await navigator.mediaDevices.getUserMedia({
-				video: true,
-				audio: false,
-			});
+			let stream: MediaStream;
+
+			try {
+				stream = await navigator.mediaDevices.getUserMedia({
+					video: {
+						facingMode: { exact: "environment" },
+					},
+					audio: false,
+				});
+			} catch {
+				stream = await navigator.mediaDevices.getUserMedia({
+					video: {
+						facingMode: { ideal: "environment" },
+					},
+					audio: false,
+				});
+			}
 
 			streamRef.current = stream;
 
@@ -116,7 +136,6 @@ export default function MacroAI({ isOpen, onClose, onConfirm }: MacroAIProps) {
 		} finally {
 			setStarting(false);
 		}
-
 	}
 
 	// capture photo
@@ -163,6 +182,7 @@ export default function MacroAI({ isOpen, onClose, onConfirm }: MacroAIProps) {
 
 	// handle photo submit
 	async function handleSubmit() {
+
 		if (!photoBlob) {
 			setError("Tap Capture first.");
 			return;
@@ -176,11 +196,12 @@ export default function MacroAI({ isOpen, onClose, onConfirm }: MacroAIProps) {
 			const res = await getMacroData(photoBlob);
 
 			if (!res.ok) {
-				setError(res.error ?? "Failed to get macros.");
+				setError(res.message);
 				return;
 			}
 			if (!res.data) {
 				setError("No Data returned from request, try again.");
+				return;
 			}
 			setMacros(res.data);
 			setStep("review");
@@ -193,6 +214,7 @@ export default function MacroAI({ isOpen, onClose, onConfirm }: MacroAIProps) {
 
 	// handle photo retake
 	async function handleRetake() {
+
 		setError(null);
 		setMacros(null);
 		setDescription("");
@@ -205,10 +227,12 @@ export default function MacroAI({ isOpen, onClose, onConfirm }: MacroAIProps) {
 
 		// restart camera
 		await startCamera();
+		
 	}
 
 	// used to handle tracking of food.
 	async function handleConfirm() {
+
 		if (!macros) {
 			setError("No macros to confirm.");
 			return;
@@ -218,11 +242,19 @@ export default function MacroAI({ isOpen, onClose, onConfirm }: MacroAIProps) {
 		setError(null);
 
 		try {
-			await onConfirm?.({
-				description: description.trim(),
-				macros,
-				image: photoBlob,
-			});
+			const logFood: Food = {
+				calories: macros.calories,
+				protein: macros.protein,
+				fat: macros.fat,
+				carbs: macros.carbs,
+				isAI: true,
+				id: null,
+				brand: 'AI Generated',
+				name: macros.foodName,
+				serving_size: 1,
+				serving_unit: 'each'
+			};
+			await onLog(logFood, mealToId(selectedMeal), date)
 
 			await handleCancel();
 		} catch (e: any) {
@@ -230,10 +262,12 @@ export default function MacroAI({ isOpen, onClose, onConfirm }: MacroAIProps) {
 		} finally {
 			setSubmitting(false);
 		}
+
 	}
 
 	// handle cancel
 	async function handleCancel() {
+		
 		await stopCamera();
 		if (photoUrl) URL.revokeObjectURL(photoUrl);
 
@@ -244,7 +278,8 @@ export default function MacroAI({ isOpen, onClose, onConfirm }: MacroAIProps) {
 		setDescription("");
 		setStep("capture");
 
-		await onClose();
+		onClose();
+
 	}
 
 	if (!isOpen) return null;
@@ -252,142 +287,170 @@ export default function MacroAI({ isOpen, onClose, onConfirm }: MacroAIProps) {
 	const hasCaptured = !!photoUrl;
 
 	return (
-		<div className="fixed inset-0 z-50 bg-black/50 p-4 overflow-y-auto">
-			<div className="min-h-full flex items-center justify-center">
-			<div className="w-full max-w-lg max-h-[calc(100vh-2rem)] overflow-y-auto rounded-2xl bg-white shadow-xl dark:bg-gray-900">
-			<div className="text-sm font-semibold">Scan food</div>
-			<button
-				type="button"
-				onClick={handleCancel}
-				className="rounded-lg px-3 py-1.5 text-sm hover:bg-black/5 dark:hover:bg-white/10"
-			>
-				Close
-			</button>
-			</div>
+		<div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 p-4">
+			<div className="flex min-h-full items-center justify-center">
+				<div className="w-full max-w-lg max-h-[calc(100vh-2rem)] overflow-y-auto rounded-2xl border border-gray-200 bg-white shadow-xl dark:border-gray-800 dark:bg-gray-900">
+					
+					<div className="flex items-center justify-between border-b border-gray-200 p-4 dark:border-gray-800">
+						<div className="text-sm font-semibold">Scan food</div>
+						<button
+							type="button"
+							onClick={handleCancel}
+							className="rounded-lg px-3 py-1.5 text-sm hover:bg-black/5 dark:hover:bg-white/10"
+						>
+							Close
+						</button>
+					</div>
 
-			<div className="p-4">
-			{error && (
-				<div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-200">
-				{error}
-				</div>
-			)}
+					<div className="p-4">
+						{error && (
+							<div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-200">
+								{error}
+							</div>
+						)}
 
-			{/* Show VIDEO only when we have NOT captured */}
-			{!hasCaptured && (
-				<div className="overflow-hidden rounded-xl border border-gray-200 bg-black dark:border-gray-800">
-				<video
-					ref={videoRef}
-					autoPlay
-					playsInline
-					muted
-					className="h-72 w-full object-cover"
-				/>
-				</div>
-			)}
+						{/* Show VIDEO only when we have NOT captured */}
+						{!hasCaptured && (
+							<div className="overflow-hidden rounded-xl border border-gray-200 bg-black dark:border-gray-800">
+								<video
+									ref={videoRef}
+									autoPlay
+									playsInline
+									muted
+									className="h-72 w-full object-cover"
+								/>
+							</div>
+						)}
 
-			{/* Show IMAGE only after capture */}
-			{hasCaptured && (
-				<div className="overflow-hidden rounded-xl border border-gray-200 dark:border-gray-800">
-				<img
-					src={photoUrl!}
-					alt="Captured"
-					className="h-72 w-full object-cover"
-				/>
-				</div>
-			)}
+						{/* Show IMAGE only after capture */}
+						{hasCaptured && (
+							<div className="overflow-hidden rounded-xl border border-gray-200 dark:border-gray-800">
+								<img
+									src={photoUrl!}
+									alt="Captured"
+									className="h-72 w-full object-cover"
+								/>
+							</div>
+						)}
 
-			{/* REVIEW FORM */}
-			{step === "review" && macros && (
-				<>
-				<div className="mt-3 rounded-xl border border-gray-200 p-3 text-sm dark:border-gray-800">
-					<div className="mb-2 font-semibold">Estimated macros</div>
-					<div className="grid grid-cols-2 gap-2">
-					<div>{macros.foodName}</div>
-					<div>Calories: {macros.calories}</div>
-					<div>Protein: {macros.protein}g</div>
-					<div>Carbs: {macros.carbs}g</div>
-					<div>Fat: {macros.fat}g</div>
+						{/* REVIEW FORM */}
+						{step === "review" && macros && (
+							<>
+								<div>
+								<label className={labelBase}>Meal</label>
+								<div className="grid grid-cols-4 gap-2">
+									{MEALS.map((m) => {
+									const c = mealColors[m];
+									const active = selectedMeal === m;
+									return (
+										<button
+										key={m}
+										type="button"
+										onClick={() => setSelectedMeal(m)}
+										className={[
+											"px-2 py-2 rounded text-sm capitalize border transition text-center",
+											"flex items-center justify-center",
+											active
+											? `${c.bg} ${c.text} ${c.border} ring-2 ${c.ring}`
+											: `bg-white/70 dark:bg-slate-900/50 border-slate-300 dark:border-slate-700 ${c.hover}`,
+										].join(" ")}
+										>
+										{m}
+										</button>
+									);
+									})}
+								</div>
+								</div>
+								<div className="mt-3 rounded-xl border border-gray-200 p-3 text-sm dark:border-gray-800">
+									<div className="mb-2 font-semibold">Estimated macros</div>
+									<div className="grid grid-cols-2 gap-2">
+										<div>{macros.foodName}</div>
+										<div>Calories: {macros.calories}</div>
+										<div>Protein: {macros.protein}g</div>
+										<div>Carbs: {macros.carbs}g</div>
+										<div>Fat: {macros.fat}g</div>
+									</div>
+								</div>
+							</>
+						)}
+
+						<div className="mt-4 flex flex-wrap gap-2">
+							{step === "capture" && (
+								<>
+									<button
+										type="button"
+										disabled={starting || submitting || hasCaptured}
+										onClick={capturePhoto}
+										className="rounded-xl bg-black px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-60 dark:bg-white dark:text-black"
+									>
+										{starting ? "Starting…" : "Capture"}
+									</button>
+
+									{hasCaptured && (
+										<button
+											type="button"
+											onClick={handleRetake}
+											disabled={submitting}
+											className="rounded-xl border border-gray-200 px-4 py-2 text-sm hover:bg-black/5 disabled:opacity-60 dark:border-gray-800 dark:hover:bg-white/10"
+										>
+											Retake
+										</button>
+									)}
+
+									<button
+										type="button"
+										onClick={handleCancel}
+										disabled={submitting}
+										className="ml-auto rounded-xl border border-gray-200 px-4 py-2 text-sm hover:bg-black/5 disabled:opacity-60 dark:border-gray-800 dark:hover:bg-white/10"
+									>
+										Cancel
+									</button>
+
+									<button
+										type="button"
+										onClick={handleSubmit}
+										disabled={submitting || !photoBlob}
+										className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-60"
+									>
+										{submitting ? "Submitting…" : "Submit"}
+									</button>
+								</>
+							)}
+
+							{step === "review" && (
+								<>
+									<button
+										type="button"
+										onClick={handleRetake}
+										disabled={submitting}
+										className="rounded-xl border border-gray-200 px-4 py-2 text-sm hover:bg-black/5 disabled:opacity-60 dark:border-gray-800 dark:hover:bg-white/10"
+									>
+										Retake
+									</button>
+
+									<button
+										type="button"
+										onClick={handleCancel}
+										disabled={submitting}
+										className="ml-auto rounded-xl border border-gray-200 px-4 py-2 text-sm hover:bg-black/5 disabled:opacity-60 dark:border-gray-800 dark:hover:bg-white/10"
+									>
+										Cancel
+									</button>
+
+									<button
+										type="button"
+										onClick={handleConfirm}
+										disabled={submitting || !macros}
+										className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-60"
+									>
+										{submitting ? "Saving…" : "Add to log"}
+									</button>
+								</>
+							)}
+						</div>
 					</div>
 				</div>
-				</>
-			)}
-
-			<div className="mt-4 flex flex-wrap gap-2">
-				{step === "capture" && (
-				<>
-					<button
-					type="button"
-					disabled={starting || submitting || hasCaptured}
-					onClick={capturePhoto}
-					className="rounded-xl bg-black px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-60 dark:bg-white dark:text-black"
-					>
-					{starting ? "Starting…" : "Capture"}
-					</button>
-
-					{hasCaptured && (
-					<button
-						type="button"
-						onClick={handleRetake}
-						disabled={submitting}
-						className="rounded-xl border border-gray-200 px-4 py-2 text-sm hover:bg-black/5 disabled:opacity-60 dark:border-gray-800 dark:hover:bg-white/10"
-					>
-						Retake
-					</button>
-					)}
-
-					<button
-					type="button"
-					onClick={handleCancel}
-					disabled={submitting}
-					className="ml-auto rounded-xl border border-gray-200 px-4 py-2 text-sm hover:bg-black/5 disabled:opacity-60 dark:border-gray-800 dark:hover:bg-white/10"
-					>
-					Cancel
-					</button>
-
-					<button
-					type="button"
-					onClick={handleSubmit}
-					disabled={submitting || !photoBlob}
-					className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-60"
-					>
-					{submitting ? "Submitting…" : "Submit"}
-					</button>
-				</>
-				)}
-
-				{step === "review" && (
-				<>
-					<button
-					type="button"
-					onClick={handleRetake}
-					disabled={submitting}
-					className="rounded-xl border border-gray-200 px-4 py-2 text-sm hover:bg-black/5 disabled:opacity-60 dark:border-gray-800 dark:hover:bg-white/10"
-					>
-					Retake
-					</button>
-
-					<button
-					type="button"
-					onClick={handleCancel}
-					disabled={submitting}
-					className="ml-auto rounded-xl border border-gray-200 px-4 py-2 text-sm hover:bg-black/5 disabled:opacity-60 dark:border-gray-800 dark:hover:bg-white/10"
-					>
-					Cancel
-					</button>
-
-					<button
-					type="button"
-					onClick={handleConfirm}
-					disabled={submitting || !macros}
-					className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-60"
-					>
-					{submitting ? "Saving…" : "Add to log"}
-					</button>
-				</>
-				)}
 			</div>
-			</div>
-		</div>
 		</div>
 	);
 }

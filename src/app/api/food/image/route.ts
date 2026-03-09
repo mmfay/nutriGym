@@ -1,27 +1,43 @@
 import { ResponseBuilder as R } from "@/lib/utils/response";
-import { estimateMacrosFromImage } from "@/lib/services/ai";
+import { estimateMacrosFromImage, getRemainingRequests, releaseAIUsage, reserveAIUsage, commitAIUsage } from "@/lib/services/ai";
+import { getUserID } from "@/lib/services/user";
+import { pacificTodayISODate } from "@/lib/utils/date";
 
 export const runtime = "nodejs";
 
 export async function POST(req: Request) {
 
-	try {
-		const form = await req.formData();
+	let userID: string | null = null;
+	let date: string | null = null;
+	let reserved = false;
+	let committed = false;
 
+	try {
+
+		userID = await getUserID();
+		date = pacificTodayISODate();
+
+		const form = await req.formData();
 		const file = form.get("image");
 
 		if (!(file instanceof File)) {
-			return R.badRequest("missing image");
+			return R.badRequest("Missing image.");
+		}
+
+		if (!file.type.startsWith("image/")) {
+			return R.badRequest("File must be an image.");
 		}
 
 		const bytes = new Uint8Array(await file.arrayBuffer());
 
-		// Optional guardrails
-		if (!file.type.startsWith("image/")) {
-			return R.badRequest("file must be an image");
-		}
 		if (bytes.length === 0) {
-			return R.badRequest("empty upload");
+			return R.badRequest("Empty upload.");
+		}
+
+		reserved = await reserveAIUsage(userID, date);
+
+		if (!reserved) {
+			return R.badRequest("No more AI requests remain.");
 		}
 
 		const macros = await estimateMacrosFromImage({
@@ -29,11 +45,62 @@ export async function POST(req: Request) {
 			mimeType: file.type || "image/jpeg",
 		});
 
-		return R.ok(macros, "successfully retrieved macros");
+		await commitAIUsage(userID, date);
 
-	} catch (e: any) {
+		committed = true;
 
-		return R.serverError(e?.message ?? "server error");
+		return R.ok(macros, "Successfully retrieved macros");
+
+	} catch (err) {
+
+		if (err instanceof Response) return err;
+
+		console.error("POST /api/food/items failed:", err);
+
+		if (err instanceof Error) {
+			console.error("Error message:", err.message);
+			console.error("Error stack:", err.stack);
+		} else {
+			console.error("Non-Error thrown:", JSON.stringify(err, null, 2));
+		}
+
+		return R.serverError("Something went wrong");
+
+	} finally {
+
+		if (reserved && !committed && userID && date) {
+
+			try {
+				await releaseAIUsage(userID, date);
+			} catch (releaseErr) {
+				console.error("Failed to release AI usage:", releaseErr);
+			}
+
+		}
 
 	}
+	
+}
+
+
+export async function GET() {
+	
+	try {
+
+		const userID = await getUserID(); 
+
+		const date = pacificTodayISODate();
+
+		const remainingAIRequests = await getRemainingRequests(userID, date);
+
+		return R.ok({requests: remainingAIRequests}, "Successfully retrieved requests");
+
+	} catch (err) {
+
+		if (err instanceof Response) return err;
+
+		console.error("GET /api/food/items:", err);
+		return R.serverError("Something went wrong");
+	}
+
 }
