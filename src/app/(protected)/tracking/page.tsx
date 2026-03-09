@@ -8,7 +8,6 @@ import AddFood from "@/app/components/Modals/AddFood";
 import { useFoodController } from "@/lib/hooks/useFoodController";
 import Tag from "@/app/components/Tag";
 import MacroAI from "@/app/components/Modals/MacroAI";
-import { getRemainingAIRequests } from "@/lib/api/food/food";
 
 // ---------- Types ----------
 type Mode = "recent" | "all";
@@ -63,8 +62,6 @@ export default function FoodTracker() {
 		setDate(todayLocalISO());
 		fc.getAIRequests();
 	}, []);
-
-
 
 	const grouped = useMemo(() => {
 
