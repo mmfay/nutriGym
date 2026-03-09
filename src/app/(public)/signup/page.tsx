@@ -78,12 +78,12 @@ export default function SignupPage() {
 					Create your account
 				</h1>
 				<p className="text-slate-600 dark:text-slate-300 leading-relaxed">
-					Set goals, save meals, and log food with speed. NutriGym keeps things clean and focused—no clutter, no gimmicks.
+					Set goals and log food with speed. NutriGym keeps things clean and focused—no clutter, no gimmicks.
 				</p>
 				<ul className="text-slate-600 dark:text-slate-300 space-y-3">
 					<li className="flex items-start gap-3"><span className="mt-1 h-2 w-2 rounded-full bg-slate-400" /> Track macros & calories</li>
-					<li className="flex items-start gap-3"><span className="mt-1 h-2 w-2 rounded-full bg-slate-400" /> Save custom meals & recipes</li>
-					<li className="flex items-start gap-3"><span className="mt-1 h-2 w-2 rounded-full bg-slate-400" /> Fast food search; barcode scanning (mobile)</li>
+					<li className="flex items-start gap-3"><span className="mt-1 h-2 w-2 rounded-full bg-slate-400" /> AI Enabled Macro Tracking</li>
+					<li className="flex items-start gap-3"><span className="mt-1 h-2 w-2 rounded-full bg-slate-400" /> Fast food search; barcode scanning</li>
 				</ul>
 				</div>
 			</section>

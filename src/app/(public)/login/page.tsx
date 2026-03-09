@@ -56,7 +56,7 @@ export default function LoginPage() {
 					<span className="mt-1 h-2 w-2 rounded-full bg-slate-400" /> Barcode & text search
 					</li>
 					<li className="flex items-start gap-3">
-					<span className="mt-1 h-2 w-2 rounded-full bg-slate-400" /> Custom meals & recipes
+					<span className="mt-1 h-2 w-2 rounded-full bg-slate-400" /> AI Enabled macro tracking
 					</li>
 					<li className="flex items-start gap-3">
 					<span className="mt-1 h-2 w-2 rounded-full bg-slate-400" /> Macro goals & insights
