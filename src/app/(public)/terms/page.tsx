@@ -156,7 +156,7 @@ export default function TermsPage() {
 					If you have questions about these Terms, please contact us at:
 				</p>
 				<p className="text-base font-medium text-foreground sm:text-lg">
-					matthew.fay@softwarerror.com
+					support-nutrigym@softwarerror.com
 				</p>
 				</section>
 			</div>
