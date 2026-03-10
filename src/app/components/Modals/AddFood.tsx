@@ -39,6 +39,30 @@ export default function AddFood({ isOpen, onClose, onOpen, onCreate }: AddFoodPr
 	const [openNutrition, setOpenNutrition] = useState(false);
 	const [openServing, setOpenServing] = useState(false);
 
+	// clear data when opened
+	useEffect(() => {
+		setName("");
+		setBrand("");
+		setBarcode("");
+
+		setCalories("");
+		setFat("");
+		setCarbs("");
+		setProtein("");
+
+		setQty("");
+		setUnit("g");
+		setServingMode("COUNT");
+
+		setHasMetric(false);
+		setMetricQty("");
+		setMetricUnit("g");
+
+		setOpenBasic(true);
+		setOpenNutrition(false);
+		setOpenServing(false);
+	}, []);
+
 	// Auto-expand sections if user starts typing there
 	useEffect(() => {
 		if (calories || fat || carbs || protein) setOpenNutrition(true);
