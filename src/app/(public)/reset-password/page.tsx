@@ -65,8 +65,7 @@ export default function ResetPassword({ searchParams }: ResetPasswordProps) {
 			setPassword("");
 			setConfirmPassword("");
 		} catch (err) {
-			const message =
-				err instanceof Error ? err.message : "Unable to reset password.";
+			const message = err instanceof Error ? err.message : "Unable to reset password.";
 			setError(message);
 		} finally {
 			setLoading(false);
