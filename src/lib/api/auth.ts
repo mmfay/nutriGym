@@ -28,6 +28,6 @@ export async function forgotPassword(email: string): Promise<ApiResult<null>> {
 }
 
 // forgot password 
-export async function resetPassword(newPassword: string): Promise<ApiResult<null>> {
-	return postJSON("api/auth/reset-password", { newPassword });
+export async function resetPassword(newPassword: string, token: string): Promise<ApiResult<null>> {
+	return postJSON("api/auth/reset-password", { newPassword, token });
 }

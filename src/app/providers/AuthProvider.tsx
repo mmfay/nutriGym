@@ -21,7 +21,7 @@ export type AuthContextValue = AuthState & {
 	handleSignup: (name: string, email: string, password: string) => Promise<void>;
 	handleLogout: () => Promise<void>;
 	handleForgotPassword: (email: string) => Promise<void>;
-	handleResetPassword: (newPassword: string) => Promise<void>;
+	handleResetPassword: (newPassword: string, token: string) => Promise<void>;
 	refresh: () => Promise<void>;
 };
 
@@ -161,13 +161,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 	};
 
 	// reset password 
-	const handleResetPassword = async (newPassword: string) => {
+	const handleResetPassword = async (newPassword: string, token: string) => {
 
 		setLoading(true);
 
 		try {
 
-			await resetPassword(newPassword)
+			await resetPassword(newPassword, token)
 
 			router.push("/login");
 
