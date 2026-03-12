@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { login, logout, register, me } from "@/lib/api/auth";
+import { login, logout, register, me, forgotPassword, resetPassword } from "@/lib/api/auth";
 
 export type AuthUser = {
 	id: string;
@@ -20,6 +20,8 @@ export type AuthContextValue = AuthState & {
 	handleLogin: (email: string, password: string) => Promise<void>;
 	handleSignup: (name: string, email: string, password: string) => Promise<void>;
 	handleLogout: () => Promise<void>;
+	handleForgotPassword: (email: string) => Promise<void>;
+	handleResetPassword: (newPassword: string, token: string) => Promise<void>;
 	refresh: () => Promise<void>;
 };
 
@@ -141,8 +143,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 		}
 	};
 
+	// forgot password 
+	const handleForgotPassword = async (email: string) => {
+
+		setLoading(true);
+
+		try {
+
+			await forgotPassword(email)
+
+		} finally {
+
+			setLoading(false);
+
+		}
+
+	};
+
+	// reset password 
+	const handleResetPassword = async (newPassword: string, token: string) => {
+
+		setLoading(true);
+
+		try {
+
+			await resetPassword(newPassword, token)
+
+			router.push("/login");
+
+		} finally {
+
+			setLoading(false);
+
+		}
+
+	};
+
 	const value: AuthContextValue = useMemo(
-		() => ({ isAuth, user, loading, handleLogin, handleSignup, handleLogout, refresh }),
+		() => ({ isAuth, user, loading, handleLogin, handleSignup, handleLogout, handleForgotPassword, handleResetPassword, refresh }),
 		[isAuth, user, loading]
 	);
 
