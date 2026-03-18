@@ -1,7 +1,6 @@
 export const runtime = "nodejs";
 
 import { ResponseBuilder as R } from "@/lib/utils/response";
-import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import pool from "@/lib/db/db";
 import bcrypt from "bcryptjs";
@@ -16,7 +15,7 @@ const RegisterReq = z.object({
 // round of encryption
 const BCRYPT_ROUNDS = Number(process.env.BCRYPT_ROUNDS ?? 12);
 
-export async function POST(req: NextRequest) {
+export async function POST(req: Request) {
 	
 	// parse body
 	let body: unknown;
@@ -52,10 +51,7 @@ export async function POST(req: NextRequest) {
 
 		const { rows } = await pool.query(sql, [normEmail, name, password_hash]);
 
-		return NextResponse.json(
-			{ ok: true, user: rows[0] },
-			{ status: 201 }
-		);
+		return R.ok(rows[0], "User Added Successfully");
 
 	} catch (err: any) {
 
