@@ -1,7 +1,7 @@
 import { ResponseBuilder as R } from "@/lib/utils/response";
 import { estimateMacrosFromImage, getRemainingRequests, releaseAIUsage, reserveAIUsage, commitAIUsage } from "@/lib/services/ai";
 import { getUserID } from "@/lib/services/user";
-import { pacificTodayISODate, timezoneDate } from "@/lib/utils/date";
+import { timezoneDate } from "@/lib/utils/date";
 import { getUser } from "@/lib/auth/session";
 import { User } from "@/lib/dataTypes/auth";
 
@@ -94,11 +94,15 @@ export async function GET() {
 	
 	try {
 
-		const userID = await getUserID(); 
+		const user = await getUser(); 
 
-		const date = pacificTodayISODate();
+		if (!user) {
+			return R.unauthorized("User is not Authenticated");
+		}
 
-		const remainingAIRequests = await getRemainingRequests(userID, date);
+		const date = timezoneDate(user?.timezone);
+
+		const remainingAIRequests = await getRemainingRequests(user.id, date);
 
 		return R.ok({requests: remainingAIRequests}, "Successfully retrieved requests");
 
