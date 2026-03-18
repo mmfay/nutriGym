@@ -6,9 +6,10 @@ export type UserDTO = {
 };
 
 export type User = {
-	id: number;
+	id: string;
 	name: string;
 	email: string;
+	timezone: string;
 }
 
 export type PasswordResetToken = {

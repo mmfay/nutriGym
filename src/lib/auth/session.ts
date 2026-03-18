@@ -2,6 +2,7 @@
 import "server-only";
 import { cookies } from "next/headers";
 import pool from "@/lib/db/db";
+import { User } from "../dataTypes/auth";
 
 export const SESSION_COOKIE = "sid";
 
@@ -36,12 +37,17 @@ export async function getSession(): Promise<Session | null> {
 }
 
 // get user data
-export async function getUser(): Promise<UserRow | null> {
+export async function getUser(): Promise<User | null> {
+
     const sess = await getSession();
+
     if (!sess) return null;
-    const { rows } = await pool.query<UserRow>(
-        `select id, name, email from users where id = $1 limit 1`,
+
+    const { rows } = await pool.query<User>(
+        `select id, name, email, timezone from users where id = $1 limit 1`,
         [sess.user_id]
     );
+
     return rows[0] ?? null;
+	
 }

@@ -113,6 +113,30 @@ export async function deleteJSON<
 	
 }
 
+// shared fetch helper, can be used for most patches.
+export async function patchJSON<
+	TData = unknown,
+	TBody extends object = Record<string, any>
+>(
+	url: string,
+	body?: TBody
+): Promise<ApiResult<TData>> {
+
+	const res = await fetch(url, {
+		method: "PATCH",
+		headers: { "Content-Type": "application/json" },
+		credentials: "include",
+		body: JSON.stringify(body),
+	});
+
+	const ct = res.headers.get("content-type") || "";
+	const isJSON = ct.includes("application/json");
+	const payload = isJSON ? await res.json() : await res.text();
+
+	return payload
+	
+}
+
 /**
  * POST multipart/form-data (for photos/files).
  * IMPORTANT: Do NOT set Content-Type manually. The browser adds the boundary.
