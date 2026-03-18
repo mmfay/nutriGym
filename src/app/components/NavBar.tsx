@@ -3,11 +3,43 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "../providers/AuthProvider";
+import { useEffect, useRef, useState } from "react";
+import { ChevronDown, User } from "lucide-react";
+import UserSettings from "./Navigation/UserSettings";
 
 export default function NavBar() {
+
 	const pathname = usePathname();
 	const router = useRouter();
 	const auth = useAuth();
+
+	// user menu state
+	const [menuOpen, setMenuOpen] = useState(false);
+	// check if user clicked inside container
+	const menuRef = useRef<HTMLDivElement | null>(null);
+
+	// effect of closing inside/outside menu
+	useEffect(() => {
+
+		function handleClickOutside(event: MouseEvent) {
+
+			if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+				setMenuOpen(false);
+			}
+
+		}
+
+		document.addEventListener("mousedown", handleClickOutside);
+		return () => document.removeEventListener("mousedown", handleClickOutside);
+
+	}, []);
+
+	// close menu when route changes
+	useEffect(() => {
+
+		setMenuOpen(false);
+		
+	}, [pathname]);
 
 	const isMarketing = pathname === "/";
 
@@ -105,14 +137,7 @@ export default function NavBar() {
 					</Link>
 				)}
 
-				<button
-					type="button"
-					onClick={auth.handleLogout}
-					className="text-sm rounded-md px-3 py-2 border border-slate-300 text-slate-700 hover:bg-slate-50
-							dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
-				>
-					Log out
-				</button>
+				<UserSettings onLogout={auth.handleLogout} />
 				</>
 			)}
 			</div>
