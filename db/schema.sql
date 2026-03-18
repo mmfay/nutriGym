@@ -6,7 +6,27 @@ create table if not exists users (
     email VARCHAR(255) UNIQUE NOT NULL,          -- unique email
     name VARCHAR(120) NOT NULL,                  -- full name
     password_hash TEXT NOT NULL,                 -- hashed password
-    created_at TIMESTAMP DEFAULT NOW()           -- record created timestamp
+	is_enabled BOOLEAN NOT NULL DEFAULT true,    -- whether user account is active
+    timezone VARCHAR(100) NOT NULL DEFAULT 'UTC', -- user timezone
+    created_at TIMESTAMP DEFAULT NOW(),           -- record created timestamp
+
+    CONSTRAINT chk_users_timezone
+    CHECK (
+        timezone IN (
+            'America/Los_Angeles',
+            'America/Denver',
+            'America/Chicago',
+            'America/New_York',
+            'America/Phoenix',
+            'America/Anchorage',
+            'Pacific/Honolulu',
+            'UTC',
+            'Europe/London',
+            'Europe/Paris',
+            'Asia/Tokyo',
+            'Australia/Sydney'
+        )
+    )
 );
 
 insert into users (id, email, name, password_hash)
