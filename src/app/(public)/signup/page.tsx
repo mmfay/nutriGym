@@ -47,12 +47,13 @@ export default function SignupPage() {
 
 			// form values and pass to registration
 			const res = await register(email, name, password);
-
+			
 			// errors on signup, possible duplicate
 			if (!res.ok) {
-				// show API error message (handles 409 duplicates, 400 zod, etc.)
-				setError(res.error || "Signup failed");
+				
+				setError(res.message || "Signup failed");
 				return;
+
 			}
 
 			// push user to home page

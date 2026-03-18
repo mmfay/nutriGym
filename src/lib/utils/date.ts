@@ -68,10 +68,10 @@ export function formatShortDate(input: Input, opts?: { timeZone?: string }): str
 	return formatter.format(date);
 }
 
-export function pacificTodayISODate(): string {
+export function timezoneDate(timezone: string): string {
 
 	const parts = new Intl.DateTimeFormat("en-CA", {
-		timeZone: "America/Los_Angeles",
+		timeZone: timezone,
 		year: "numeric",
 		month: "2-digit",
 		day: "2-digit",

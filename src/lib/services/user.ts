@@ -115,3 +115,33 @@ export async function findUserByEmail(email: string): Promise<User | null> {
 	return rows[0] ?? null;
 
 }
+
+export async function updateUser(name: string, email: string, timezone: string, id: string): Promise<User | null> {
+
+	const sql = `
+		UPDATE users 
+		SET 
+			name = $1,
+			email = $2,
+			timezone = $3
+		WHERE 
+			id = $4
+		RETURNING
+			name,
+			email,
+			timezone,
+			id;
+	`;
+
+	try {
+		const { rows } = await pool.query<User>(sql, [name, email, timezone, id]);
+		return rows[0] ?? null;
+	} catch (error: any) {
+		if (error.code === "23505") {
+			throw Error("EMAIL_IN_USE");
+		}
+		console.log(error);
+		throw Error("Something went wrong");
+	}
+
+}
