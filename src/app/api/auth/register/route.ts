@@ -1,40 +1,22 @@
 export const runtime = "nodejs";
 
 import { ResponseBuilder as R } from "@/lib/utils/response";
-import { z } from "zod";
 import pool from "@/lib/db/db";
 import bcrypt from "bcryptjs";
-
-// input schema
-const RegisterReq = z.object({
-	email: z.string().email(),                  // unique
-	name: z.string().min(1).max(120),
-	password: z.string().min(8),                // will be hashed
-});
 
 // round of encryption
 const BCRYPT_ROUNDS = Number(process.env.BCRYPT_ROUNDS ?? 12);
 
 export async function POST(req: Request) {
-	
-	// parse body
-	let body: unknown;
 
 	try {
-		body = await req.json();
-	} catch {
-		return R.badRequest("Poorly formed Request");
-	}
 
-	const parsed = RegisterReq.safeParse(body);
+		const body = await req.json();
+		const { email, name, password } = body;
 
-	if (!parsed.success) {
-		return R.badRequest("Invalid Payload");
-	}
-
-	const { email, name, password } = parsed.data;
-
-	try {
+		if (!email || !name || !password) {
+			R.badRequest("Invalid Payload");
+		}
 
 		// normalize email
 		const normEmail = email.trim().toLowerCase();
@@ -46,7 +28,7 @@ export async function POST(req: Request) {
 		const sql = `
 		INSERT INTO users ( email, name, password_hash)
 		VALUES ($1, $2, $3 )
-		RETURNING email, name, created_at
+		RETURNING email, name, created_at;
 		`;
 
 		const { rows } = await pool.query(sql, [normEmail, name, password_hash]);
@@ -54,7 +36,7 @@ export async function POST(req: Request) {
 		return R.ok(rows[0], "User Added Successfully");
 
 	} catch (err: any) {
-
+		
 		// Handle unique constraint violations (Postgres 23505)
 		if (err?.code === "23505") {
 
@@ -64,6 +46,7 @@ export async function POST(req: Request) {
 
 		console.error(err);
 		return R.serverError("An error occurred on the server.");
-		
+
 	}
+
 }
