@@ -1,21 +1,28 @@
 import { ResponseBuilder as R } from "@/lib/utils/response";
 import { estimateMacrosFromImage, getRemainingRequests, releaseAIUsage, reserveAIUsage, commitAIUsage } from "@/lib/services/ai";
 import { getUserID } from "@/lib/services/user";
-import { pacificTodayISODate } from "@/lib/utils/date";
+import { pacificTodayISODate, timezoneDate } from "@/lib/utils/date";
+import { getUser } from "@/lib/auth/session";
+import { User } from "@/lib/dataTypes/auth";
 
 export const runtime = "nodejs";
 
 export async function POST(req: Request) {
 
-	let userID: string | null = null;
+	let user: User | null = null;
 	let date: string | null = null;
 	let reserved = false;
 	let committed = false;
 
 	try {
 
-		userID = await getUserID();
-		date = pacificTodayISODate();
+		user = await getUser();
+
+		if (!user) {
+			return R.unauthorized("User is not authorized");
+		}
+
+		date = timezoneDate(user?.timezone);
 
 		const form = await req.formData();
 		const file = form.get("image");
@@ -34,7 +41,7 @@ export async function POST(req: Request) {
 			return R.badRequest("Empty upload.");
 		}
 
-		reserved = await reserveAIUsage(userID, date);
+		reserved = await reserveAIUsage(user.id, date);
 
 		if (!reserved) {
 			return R.badRequest("No more AI requests remain.");
@@ -45,7 +52,7 @@ export async function POST(req: Request) {
 			mimeType: file.type || "image/jpeg",
 		});
 
-		await commitAIUsage(userID, date);
+		await commitAIUsage(user.id, date);
 
 		committed = true;
 
@@ -68,10 +75,10 @@ export async function POST(req: Request) {
 
 	} finally {
 
-		if (reserved && !committed && userID && date) {
+		if (reserved && !committed && user?.id && date) {
 
 			try {
-				await releaseAIUsage(userID, date);
+				await releaseAIUsage(user.id, date);
 			} catch (releaseErr) {
 				console.error("Failed to release AI usage:", releaseErr);
 			}
