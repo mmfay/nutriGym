@@ -1,5 +1,6 @@
 export const runtime = "nodejs";
 
+import { ResponseBuilder as R } from "@/lib/utils/response";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import pool from "@/lib/db/db";
@@ -23,16 +24,13 @@ export async function POST(req: NextRequest) {
 	try {
 		body = await req.json();
 	} catch {
-		return NextResponse.json({ code: "BAD_JSON", message: "Invalid JSON." }, { status: 400 });
+		return R.badRequest("Poorly formed Request");
 	}
 
 	const parsed = RegisterReq.safeParse(body);
 
 	if (!parsed.success) {
-		return NextResponse.json(
-		{ code: "BAD_REQUEST", message: "Invalid payload", errors: parsed.error.flatten() },
-		{ status: 400 }
-		);
+		return R.badRequest("Invalid Payload");
 	}
 
 	const { email, name, password } = parsed.data;
@@ -64,29 +62,12 @@ export async function POST(req: NextRequest) {
 		// Handle unique constraint violations (Postgres 23505)
 		if (err?.code === "23505") {
 
-			// Determine which unique constraint hit (optional: inspect err.detail)
-			const conflict =
-				(err.detail?.includes("(email)") && "email") ||
-				"user";
-
-			return NextResponse.json(
-				{ ok: false, code: "CONFLICT", message: `${conflict} already exists` },
-				{ status: 409 }
-			);
+			return R.badRequest("Email already exists");
 
 		}
 
-		const isDev = process.env.NODE_ENV !== "production";
-
-		return NextResponse.json(
-			{
-				ok: false,
-				code: "INTERNAL",
-				message: "Server error",
-				...(isDev ? { details: err?.message, stack: err?.stack } : {}),
-			},
-			{ status: 500 }
-		);
+		console.error(err);
+		return R.serverError("An error occurred on the server.");
 		
 	}
 }
