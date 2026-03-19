@@ -61,7 +61,7 @@ export default function AddFood({ isOpen, onClose, onOpen, onCreate }: AddFoodPr
 		setOpenBasic(true);
 		setOpenNutrition(false);
 		setOpenServing(false);
-	}, []);
+	}, [isOpen]);
 
 	// Auto-expand sections if user starts typing there
 	useEffect(() => {
