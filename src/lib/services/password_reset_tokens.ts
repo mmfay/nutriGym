@@ -14,7 +14,7 @@ const RESET_TOKEN_TTL_MINUTES = 5;
  * @returns Password Reset Token Record
  */
 export async function createPasswordResetToken(
-	userId: number,
+	userId: string,
 	tokenHash: string
 ): Promise<PasswordResetToken> {
 
@@ -83,6 +83,8 @@ export async function getValidPasswordResetToken(
 
 	const { rows } = await pool.query<PasswordResetToken>(sql, [tokenHash]);
 
-	return rows[0] ?? null;
+	const resetTokenRecord = rows[0] ?? null
+
+	return resetTokenRecord;
 
 }
