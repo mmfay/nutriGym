@@ -1,13 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { verifyEmail as validateEmail } from "@/lib/api/auth";
 
-export default function VerifyEmailPage() {
+// Props for page
+type VerifyEmailPageProps = {
+	searchParams: Promise<{
+		token?: string;
+	}>;
+};
 
-	const searchParams = useSearchParams();
-	const token = searchParams.get("token");
+export default function VerifyEmailPage({ searchParams } : VerifyEmailPageProps) {
+
+	const params = use(searchParams);
+	const token = params.token ?? "";
 
 	const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
 	const [message, setMessage] = useState("Verifying your email...");
