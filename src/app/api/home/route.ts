@@ -6,7 +6,7 @@ import { getUser, SESSION_COOKIE } from "@/lib/auth/session";
 import { getTodayMacros, getTodayGoals, getMacroTrend } from "@/lib/services/macros";
 import { getWeightTrend } from "@/lib/services/weight";
 import { ResponseBuilder as R } from "@/lib/utils/response";
-import { DEFAULT_GOAL, DEFAULT_TODAY, HomePayload, WeightPoint, MacroGoal, TodayMacros, DayMacros } from "@/lib/dataTypes";
+import { DEFAULT_TODAY, HomePayload, WeightPoint, MacroGoal, TodayMacros, DayMacros } from "@/lib/dataTypes";
 
 export async function GET(req: Request) {
 
