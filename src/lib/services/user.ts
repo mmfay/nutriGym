@@ -3,6 +3,7 @@ import { ResponseBuilder as R } from "../utils/response";
 import bcrypt from "bcryptjs";
 import pool from "../db/db";
 import { User } from "../dataTypes/auth";
+import { Mailer } from "./mailer";
 
 export async function getUserID(){
 
@@ -143,5 +144,95 @@ export async function updateUser(name: string, email: string, timezone: string, 
 		console.log(error);
 		throw Error("Something went wrong");
 	}
+
+}
+
+export async function insertUser(email: string, name: string, hashedPassword: string) {
+
+	// insert user
+	const sql = `
+		INSERT INTO users ( email, name, password_hash)
+		VALUES ($1, $2, $3 )
+		RETURNING email, name, created_at;
+	`;
+
+	const { rows } = await pool.query(sql, [email, name, hashedPassword]);
+	const createdUser = rows[0] ?? null;
+
+	if (!createdUser) {
+		throw new Error("USER_CREATE_FAILED");
+	}
+
+	const mailer = new Mailer();
+
+	mailer.sendVerificationEmail(createdUser.email, createdUser.name);
+
+	return createdUser;
+
+}
+
+/**
+ * Verifies a user's email if the provided token hash is valid and not expired.
+ *
+ * @param tokenHash hashed verification token
+ * @returns updated user record if verified, null otherwise
+ */
+export async function verifyEmailByTokenHash(tokenHash: string): Promise<User | null> {
+	
+	const sql = `
+		UPDATE users
+		SET
+			email_verified = TRUE,
+			email_verified_at = NOW(),
+			email_verification_token_hash = NULL,
+			email_verification_expires_at = NULL
+		WHERE
+			email_verification_token_hash = $1
+			AND email_verification_expires_at > NOW()
+			AND email_verified = FALSE
+		RETURNING
+			id,
+			email,
+			name,
+			timezone,
+			is_enabled,
+			email_verified,
+			email_verified_at,
+			created_at;
+	`;
+
+	const { rows } = await pool.query<User>(sql, [tokenHash]);
+
+	return rows[0] ?? null;
+
+}
+
+export type VerificationEmailTokenResult = {
+	user_id: string;
+	email_verification_token_hash: string;
+	email_verification_expires_at: string;
+};
+
+export async function createVerificationEmailToken(
+	userID: string,
+	hashedToken: string
+): Promise<VerificationEmailTokenResult | null> {
+
+	const sql = `
+		UPDATE users
+		SET
+			email_verification_token_hash = $1,
+			email_verification_expires_at = NOW() + INTERVAL '24 hours'
+		WHERE
+			id = $2
+		RETURNING
+			id as user_id,
+			email_verification_token_hash,
+			email_verification_expires_at;
+	`;
+
+	const { rows } = await pool.query<VerificationEmailTokenResult>(sql, [hashedToken, userID]);
+
+	return rows[0] ?? null;
 
 }
