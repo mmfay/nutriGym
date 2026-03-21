@@ -1,8 +1,8 @@
 export const runtime = "nodejs";
 
 import { ResponseBuilder as R } from "@/lib/utils/response";
-import pool from "@/lib/db/db";
 import bcrypt from "bcryptjs";
+import { insertUser } from "@/lib/services/user";
 
 // round of encryption
 const BCRYPT_ROUNDS = Number(process.env.BCRYPT_ROUNDS ?? 12);
@@ -24,16 +24,13 @@ export async function POST(req: Request) {
 		// hash password
 		const password_hash = await bcrypt.hash(password, BCRYPT_ROUNDS);
 
-		// insert user
-		const sql = `
-		INSERT INTO users ( email, name, password_hash)
-		VALUES ($1, $2, $3 )
-		RETURNING email, name, created_at;
-		`;
+		const newUser = await insertUser(normEmail, name, password_hash)
 
-		const { rows } = await pool.query(sql, [normEmail, name, password_hash]);
+		if (!newUser) {
+			throw new Error("Error during creation process.");
+		}
 
-		return R.ok(rows[0], "User Added Successfully");
+		return R.ok("User created successfully.");
 
 	} catch (err: any) {
 		
