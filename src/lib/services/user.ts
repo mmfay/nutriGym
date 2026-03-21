@@ -203,7 +203,9 @@ export async function verifyEmailByTokenHash(tokenHash: string): Promise<User | 
 
 	const { rows } = await pool.query<User>(sql, [tokenHash]);
 
-	return rows[0] ?? null;
+	const user = rows[0] ?? null;
+
+	return user;
 
 }
 
