@@ -27,7 +27,12 @@ export async function forgotPassword(email: string): Promise<ApiResult<null>> {
 	return postJSON("api/auth/forgot-password", { email });
 }
 
-// forgot password 
+// reset password 
 export async function resetPassword(newPassword: string, token: string): Promise<ApiResult<null>> {
 	return postJSON("api/auth/reset-password", { newPassword, token });
+}
+
+// verify email 
+export async function verifyEmail(token: string): Promise<ApiResult<null>> {
+	return postJSON("api/auth/verify-email", { token });
 }
