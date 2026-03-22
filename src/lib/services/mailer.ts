@@ -208,4 +208,46 @@ export class Mailer {
 
 	}
 
+	async sendNewUserAlert(email: string, name: string, createdDate: string) {
+
+		const to = process.env.NEW_USER_ALERT_TO || process.env.SMTP_FROM;
+
+		if (!to) {
+			throw new Error("Missing NEW_USER_ALERT_TO or SMTP_FROM environment variable.");
+		}
+
+		const createdAt = createdDate ?? new Date();
+
+		const subject = "New Signup";
+		
+		const text = [
+			"A new user signed up for NutriGym.",
+			"",
+			`Name: ${name}`,
+			`Email: ${email}`,
+			`Created At: ${createdAt}`,
+		].join("\n");
+
+		const html = `
+			<div style="font-family: Arial, sans-serif; line-height: 1.5;">
+				<h2>New Signup</h2>
+				<p>A new user signed up for NutriGym.</p>
+				<ul>
+					<li><strong>Name:</strong> ${name}</li>
+					<li><strong>Email:</strong> ${email}</li>
+					<li><strong>Created At:</strong> ${createdAt}</li>
+				</ul>
+			</div>
+		`;
+
+		await this.transporter.sendMail({
+			from: process.env.SMTP_FROM,
+			to,
+			subject,
+			text,
+			html,
+		});
+
+	}
+
 }
