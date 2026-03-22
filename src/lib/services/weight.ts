@@ -3,7 +3,7 @@ import pool from "@/lib/db/db";
 import { Weight } from "../dataTypes";
 import { ResponseBuilder as R } from "../utils/response";
 
-export async function getWeightTrend(userId: string, days = 14) {
+export async function getWeightTrend(userId: string, days = 28) {
 
 	const { rows } = await pool.query(
 		`select 

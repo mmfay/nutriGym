@@ -7,6 +7,10 @@ create table if not exists users (
     name VARCHAR(120) NOT NULL,                  -- full name
     password_hash TEXT NOT NULL,                 -- hashed password
 	is_enabled BOOLEAN NOT NULL DEFAULT true,    -- whether user account is active
+	email_verified BOOLEAN NOT NULL DEFAULT false,    -- whether user account has verified email
+	email_verified_at TIMESTAMP NULL,                   -- when email was verified
+    email_verification_token_hash TEXT NULL,            -- hashed verification token
+    email_verification_expires_at TIMESTAMP NULL,       -- verification token expiration
     timezone VARCHAR(100) NOT NULL DEFAULT 'UTC', -- user timezone
     created_at TIMESTAMP DEFAULT NOW(),           -- record created timestamp
 

@@ -1,59 +1,28 @@
 export const runtime = "nodejs";
 
-import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
+import { ResponseBuilder as R } from "@/lib/utils/response";
 import pool from "@/lib/db/db";
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
 
-// form of a login request
-const LoginReq = z.object({
-	email: z.string().email(),
-	password: z.string().min(8),
-});
-
-type LoginResponse =
-  | { ok: true; user: { id: string; name: string; email: string } }
-  | { ok: false; code: string; message: string; errors?: unknown };
-
 const SESSION_TTL_SEC = 60 * 60 * 24; // 1 Day
 
-export async function POST(req: NextRequest) {
+export async function POST(req: Request) {
 
 	try {
-		
-		// parse body
-		let body: unknown;
 
-		try {
-			body = await req.json();
-		} catch {
-			return NextResponse.json(
-				{ ok: false, code: "BAD_JSON", message: "Request body must be valid JSON." },
-				{ status: 400 }
-			);
-		}
+		const body = await req.json();
 
-		const parsed = LoginReq.safeParse(body);
-
-		if (!parsed.success) {
-			return NextResponse.json(
-				{ ok: false, code: "BAD_REQUEST", message: "Invalid payload", errors: parsed.error.flatten() },
-				{ status: 400 }
-			);
-		}
-
-		// get email and password
-		const { email, password } = parsed.data;
+		const { email, password } = body;
 
 		const emailNorm = email.trim().toLowerCase();
 
 		// fetch user by email
 		const sql = `
-		SELECT id, email, name, password_hash
-		FROM users
-		WHERE email = $1
-		LIMIT 1
+			SELECT id, email, name, timezone, password_hash, is_enabled, email_verified
+			FROM users
+			WHERE email = $1
+			LIMIT 1
 		`;
 
 		// store what is returned in rows
@@ -61,19 +30,24 @@ export async function POST(req: NextRequest) {
 		const user = rows[0];
 
 		// if no user, send email not found.
-		if (!user)
-			return NextResponse.json<LoginResponse>(
-				{ ok: false, code: "INVALID_CREDENTIALS", message: "Email Address not found" },
-				{ status: 401 }
-			);
-		
+		if (!user) {
+			return R.unauthorized("Invalid login.");
+		}		
+
+		// validate that user is enabled.
+		if (!user.is_enabled) {
+			return R.unauthorized("This account is disabled.");
+		}	
+
+		// validate that user email has been verified.
+		if (!user.email_verified) {
+			return R.unauthorized("Please verify your email before signing in.");
+		}
+
 		// validate password
 		const valid = await bcrypt.compare(password, user.password_hash);
 		if (!valid) {
-			return NextResponse.json<LoginResponse>(
-				{ ok: false, code: "INVALID_CREDENTIALS", message: "Invalid email or password" },
-				{ status: 401 }
-			);
+			return R.unauthorized("Invalid email or password.");
 		}
 		
 		// Create opaque session id + persist
@@ -90,10 +64,8 @@ export async function POST(req: NextRequest) {
 		);
 
 		// Set HttpOnly cookie + return user
-		const res = NextResponse.json<LoginResponse>(
-			{ ok: true, user: { id: String(user.id), name: user.name, email: user.email } },
-			{ status: 200 }
-		);
+		const res = R.ok("User logged in successfully.");
+		
 		res.cookies.set({
 			name: "sid",
 			value: sid, // opaque only
@@ -103,19 +75,14 @@ export async function POST(req: NextRequest) {
 			path: "/",
 			maxAge: SESSION_TTL_SEC,
 		});
+
 		return res;
 
 	} catch (err: any) {
-		
-		const isDev = process.env.NODE_ENV !== "production";
-		return NextResponse.json(
-			{
-				ok: false,
-				code: "INTERNAL",
-				message: JSON.stringify(err),
-				...(isDev ? { details: err?.message, stack: err?.stack } : {}),
-			},
-			{ status: 500 }
-		);
+
+		console.error("Error on the server:", err);
+		R.serverError("There was an error on the server");
+
 	}
+	
 }
