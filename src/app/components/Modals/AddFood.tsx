@@ -41,6 +41,7 @@ export default function AddFood({ isOpen, onClose, onOpen, onCreate }: AddFoodPr
 
 	// clear data when opened
 	useEffect(() => {
+
 		setName("");
 		setBrand("");
 		setBarcode("");
@@ -61,6 +62,7 @@ export default function AddFood({ isOpen, onClose, onOpen, onCreate }: AddFoodPr
 		setOpenBasic(true);
 		setOpenNutrition(false);
 		setOpenServing(false);
+
 	}, [isOpen]);
 
 	// Auto-expand sections if user starts typing there
@@ -409,7 +411,7 @@ export default function AddFood({ isOpen, onClose, onOpen, onCreate }: AddFoodPr
 						<option value="piece">piece</option>
 						<option value="piece">bar</option>
 						<option value="slice">slice</option>
-						<option value="slice">scoop</option>
+						<option value="scoop">scoop</option>
 						<option value="packet">packet</option>
 						<option value="can">can</option>
 						<option value="bottle">bottle</option>
