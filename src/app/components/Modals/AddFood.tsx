@@ -409,7 +409,7 @@ export default function AddFood({ isOpen, onClose, onOpen, onCreate }: AddFoodPr
 						<option value="gal">gal</option>
 						<option value="each">each</option>
 						<option value="piece">piece</option>
-						<option value="piece">bar</option>
+						<option value="bar">bar</option>
 						<option value="slice">slice</option>
 						<option value="scoop">scoop</option>
 						<option value="packet">packet</option>
