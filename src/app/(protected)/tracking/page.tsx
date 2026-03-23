@@ -64,8 +64,7 @@ export default function FoodTracker() {
 		fc.getAIRequests();
 	}, []);
 
-
-
+	// grouping food items into a meal type
 	const grouped = useMemo(() => {
 
 		const init = { breakfast: [], lunch: [], dinner: [], snack: [] } as Record<Meal, any[]>;
@@ -289,12 +288,12 @@ export default function FoodTracker() {
 				)}
 
 				{mode === "all" && allFoods.map(f => (
-				<FoodCard
-					key={f.id}
-					food={f}
-					onClick={() => fc.openFoodLogModal(f)}
-					onQuickAdd={(meal) => addFood(f, meal, 1)}
-				/>
+					<FoodCard
+						key={f.id}
+						food={f}
+						onClick={() => fc.openFoodLogModal(f)}
+						onQuickAdd={(meal) => addFood(f, meal, 1)}
+					/>
 				))}
 				{mode === "all" && allFoods.length === 0 && !loadingAll && <Empty label="No foods match your search." />}
 
@@ -352,7 +351,7 @@ export default function FoodTracker() {
 							{items.map((x, i) => (
 								<Tag
 								key={`${x.food.id}-${i}`}
-								label={`${x.food.name} × ${x.servings}`}
+								label={`${x.food.name} x ${Number(x.food.serving_size)}${x.food.serving_unit}`}
 								sub={`${Number(x.food.calories) * x.servings} kcal`}
 								colorClasses={`${c.border} ${c.text}`}
 								onRemove={() => fc.removeFoodLog(x.food.id)}
