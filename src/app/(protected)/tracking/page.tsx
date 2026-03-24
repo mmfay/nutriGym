@@ -8,6 +8,7 @@ import AddFood from "@/app/components/Modals/AddFood";
 import { useFoodController } from "@/lib/hooks/useFoodController";
 import Tag from "@/app/components/Tag";
 import MacroAI from "@/app/components/Modals/MacroAI";
+import FoodCard from "@/app/components/FoodCard";
 
 // ---------- Types ----------
 type Mode = "recent" | "all";
@@ -63,8 +64,7 @@ export default function FoodTracker() {
 		fc.getAIRequests();
 	}, []);
 
-
-
+	// grouping food items into a meal type
 	const grouped = useMemo(() => {
 
 		const init = { breakfast: [], lunch: [], dinner: [], snack: [] } as Record<Meal, any[]>;
@@ -288,12 +288,12 @@ export default function FoodTracker() {
 				)}
 
 				{mode === "all" && allFoods.map(f => (
-				<FoodCard
-					key={f.id}
-					food={f}
-					onClick={() => fc.openFoodLogModal(f)}
-					onQuickAdd={(meal) => addFood(f, meal, 1)}
-				/>
+					<FoodCard
+						key={f.id}
+						food={f}
+						onClick={() => fc.openFoodLogModal(f)}
+						onQuickAdd={(meal) => addFood(f, meal, 1)}
+					/>
 				))}
 				{mode === "all" && allFoods.length === 0 && !loadingAll && <Empty label="No foods match your search." />}
 
@@ -351,7 +351,7 @@ export default function FoodTracker() {
 							{items.map((x, i) => (
 								<Tag
 								key={`${x.food.id}-${i}`}
-								label={`${x.food.name} × ${x.servings}`}
+								label={`${x.food.name} x ${Number(x.food.serving_size)}${x.food.serving_unit}`}
 								sub={`${Number(x.food.calories) * x.servings} kcal`}
 								colorClasses={`${c.border} ${c.text}`}
 								onRemove={() => fc.removeFoodLog(x.food.id)}
@@ -387,60 +387,6 @@ export default function FoodTracker() {
 		</div>
 		</div>
 	);
-}
-
-// ---------- UI Bits ----------
-function FoodCard({
-  food, onClick, onQuickAdd
-}: {
-  food: Food;
-  onClick: () => void;
-  onQuickAdd: (meal: Meal) => void;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className="w-full text-left p-3 rounded-xl shadow transition border hover:-translate-y-0.5 hover:shadow-md bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
-    >
-      <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <div className="font-semibold truncate">{food.name}</div>
-          <div className="mt-1 inline-flex items-center gap-2">
-            {food.brand && (
-              <span className="px-2 py-0.5 text-[11px] rounded bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-100">
-                {food.brand}
-              </span>
-            )}
-            <span className="px-2 py-0.5 text-[11px] rounded bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-100">
-              {food.calories} kcal
-            </span>
-            <span className="px-2 py-0.5 text-[11px] rounded bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-100">
-              P:{food.protein} C:{food.carbs} F:{food.fat}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Quick add chips */}
-      <div className="mt-3 flex flex-wrap gap-2">
-        {MEALS.map(m => {
-          const c = mealColors[m];
-          return (
-            <span
-              key={m}
-              onClick={(e) => { e.stopPropagation(); onQuickAdd(m); }}
-              className={[
-                "px-2 py-1 text-xs rounded border cursor-pointer capitalize transition",
-                c.bg, c.text, c.border, c.hover
-              ].join(" ")}
-            >
-              + {m}
-            </span>
-          );
-        })}
-      </div>
-    </button>
-  );
 }
 
 function Empty({ label }: { label: string }) {
