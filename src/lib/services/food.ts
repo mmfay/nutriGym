@@ -17,7 +17,8 @@ export async function getRecentFood(userId: string, meal: number | null, limit =
 			v.food_calories_per_serving AS calories,
 			v.brand,
 			v.serving_metric_size,
-			v.serving_metric_unit
+			v.serving_metric_unit,
+			v.is_verified
 		FROM food_log_v v
 		WHERE 
 			v.user_id = $1
