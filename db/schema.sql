@@ -90,6 +90,7 @@ create table if not exists food (
 	calories          numeric(7,2) not null default 0,  -- label calories, not computed
 	created_at        timestamptz not null default now(),
 	updated_at        timestamptz not null default now(),
+	is_verified		  boolean not null default false,
 	constraint chk_food_macros_nonneg
 		check (
 		protein >= 0 and carbs >= 0 and fat >= 0 and calories >= 0
@@ -186,6 +187,7 @@ CREATE OR REPLACE VIEW food_log_v AS
 			WHEN f.serving_size > 0 THEN ft.serving_size / f.serving_size
 			ELSE NULL
 		END                      AS servings_equivalent
+		,f.is_verified
 	FROM food_tracker ft
 	JOIN food f ON f.id = ft.food_id;
 
