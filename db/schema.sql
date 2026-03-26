@@ -7,6 +7,7 @@ create table if not exists users (
     name VARCHAR(120) NOT NULL,                  -- full name
     password_hash TEXT NOT NULL,                 -- hashed password
 	is_enabled BOOLEAN NOT NULL DEFAULT true,    -- whether user account is active
+	is_sys_admin BOOLEAN NOT NULL DEFAULT false,
 	email_verified BOOLEAN NOT NULL DEFAULT false,    -- whether user account has verified email
 	email_verified_at TIMESTAMP NULL,                   -- when email was verified
     email_verification_token_hash TEXT NULL,            -- hashed verification token
@@ -90,6 +91,7 @@ create table if not exists food (
 	calories          numeric(7,2) not null default 0,  -- label calories, not computed
 	created_at        timestamptz not null default now(),
 	updated_at        timestamptz not null default now(),
+	is_verified		  boolean not null default false,
 	constraint chk_food_macros_nonneg
 		check (
 		protein >= 0 and carbs >= 0 and fat >= 0 and calories >= 0
@@ -186,6 +188,7 @@ CREATE OR REPLACE VIEW food_log_v AS
 			WHEN f.serving_size > 0 THEN ft.serving_size / f.serving_size
 			ELSE NULL
 		END                      AS servings_equivalent
+		,f.is_verified
 	FROM food_tracker ft
 	JOIN food f ON f.id = ft.food_id;
 

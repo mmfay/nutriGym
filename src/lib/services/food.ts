@@ -17,7 +17,8 @@ export async function getRecentFood(userId: string, meal: number | null, limit =
 			v.food_calories_per_serving AS calories,
 			v.brand,
 			v.serving_metric_size,
-			v.serving_metric_unit
+			v.serving_metric_unit,
+			v.is_verified
 		FROM food_log_v v
 		WHERE 
 			v.user_id = $1
@@ -37,8 +38,8 @@ export async function getRecentFood(userId: string, meal: number | null, limit =
 }
 
 
-// get recent foods for selection
-export async function addNewFood(food: FoodCreate) {
+// add new food to database
+export async function addNewFood(food: FoodCreate, is_sys_admin: boolean = false) {
 
 	const barcode =
 		food.barcode && food.barcode.trim() !== ""
@@ -46,8 +47,8 @@ export async function addNewFood(food: FoodCreate) {
 			: null;
 
 	const sql = `
-	insert into food (name, brand, barcode, serving_size, serving_unit, serving_type, protein, carbs, fat, calories, serving_metric_size, serving_metric_unit) values
-  		($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12);
+		INSERT INTO food (name, brand, barcode, serving_size, serving_unit, serving_type, protein, carbs, fat, calories, serving_metric_size, serving_metric_unit, is_verified) 
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13);
 	`;
 
 	const params = [food.name, 
@@ -61,7 +62,8 @@ export async function addNewFood(food: FoodCreate) {
 					food.fat, 
 					food.calories,
 					food.serving_metric_size,
-					food.serving_metric_unit
+					food.serving_metric_unit,
+					is_sys_admin
 	];
 
 	const { rows } = await pool.query(sql, params);

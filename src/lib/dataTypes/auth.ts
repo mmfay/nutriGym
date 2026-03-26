@@ -10,6 +10,7 @@ export type User = {
 	name: string;
 	email: string;
 	timezone: string;
+	is_sys_admin: boolean;
 }
 
 export type PasswordResetToken = {
