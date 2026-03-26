@@ -23,7 +23,7 @@ export default function FoodCard({
 			{/* Top-right badge */}
 			{food.is_verified && (
 				<div className="absolute top-3 right-3">
-					<VerifiedBadge verified={food.is_verified} />
+					<VerifiedBadge verified={food.is_verified} size={"lg"}/>
 				</div>
 			)}
 			<div className="flex items-center justify-between gap-3">

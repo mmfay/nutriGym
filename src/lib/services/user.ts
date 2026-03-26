@@ -1,4 +1,4 @@
-import { getUser, SESSION_COOKIE } from "@/lib/auth/session";
+import { getSession, SESSION_COOKIE } from "@/lib/auth/session";
 import { ResponseBuilder as R } from "../utils/response";
 import bcrypt from "bcryptjs";
 import pool from "../db/db";
@@ -239,4 +239,32 @@ export async function createVerificationEmailToken(
 
 	return rows[0] ?? null;
 
+}
+
+// get user record
+export async function getUser(): Promise<User | null> {
+
+    const sess = await getSession();
+
+    if (!sess) return null;
+
+	const sql = `
+		SELECT 
+			id
+			,name
+			,email
+			,timezone
+			,is_sys_admin
+		FROM users 
+		WHERE
+			id = $1
+		LIMIT 1;
+	`;
+
+    const { rows } = await pool.query<User>(sql, [sess.user_id]);
+
+	const user = rows[0] ?? null;
+
+    return user;
+	
 }
