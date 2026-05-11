@@ -69,6 +69,9 @@ export default function NavBar() {
 					<Link href="/tracking" className="hover:text-slate-900 dark:hover:text-white">
 					Tracking
 					</Link>
+					<Link href="/kitchen" className="hover:text-slate-900 dark:hover:text-white">
+					Kitchen
+					</Link>
 				</nav>
 
 				{/* Mobile dropdown */}
