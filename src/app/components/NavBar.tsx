@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "../providers/AuthProvider";
 import { useEffect, useRef, useState } from "react";
-import { ChevronDown, User } from "lucide-react";
 import UserSettings from "./Navigation/UserSettings";
 
 export default function NavBar() {
