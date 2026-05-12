@@ -1,9 +1,10 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import { searchFood } from "../api/food/food";
+import { searchFood, logFood } from "../api/food/food";
 import { getRecipes, createRecipe, deleteRecipe } from "../api/recipes/recipes";
 import { Food, RecipeItemCreate, PendingRecipeItem, UserRecipe } from "../dataTypes";
+import { Meal } from "../utils/meal";
 
 export type RecipeController = {
 	loading: boolean;
@@ -16,6 +17,10 @@ export type RecipeController = {
 
 	recipeName: string;
 	setRecipeName: (name: string) => void;
+	recipeYieldSize: string;
+	setRecipeYieldSize: (v: string) => void;
+	recipeYieldUnit: string;
+	setRecipeYieldUnit: (v: string) => void;
 	pendingItems: PendingRecipeItem[];
 	addItemToPending: (item: PendingRecipeItem) => void;
 	removeItemFromPending: (tempId: string) => void;
@@ -29,9 +34,12 @@ export type RecipeController = {
 	openServingPicker: (food: Food) => void;
 	closeServingPicker: () => void;
 
-	addFoodModalOpen: boolean;
-	openAddFoodModal: () => void;
-	closeAddFoodModal: () => void;
+	selectedRecipeToLog: UserRecipe | null;
+	recipeLogSlot: Meal | null;
+	recipeLogModalOpen: boolean;
+	openRecipeLogModal: (recipe: UserRecipe, slot?: Meal | null) => void;
+	closeRecipeLogModal: () => void;
+	onLogRecipe: (food: Food, meal: number, date: string) => Promise<void>;
 };
 
 export function useRecipeController(): RecipeController {
@@ -43,12 +51,16 @@ export function useRecipeController(): RecipeController {
 	const [recipes, setRecipes] = useState<UserRecipe[]>([]);
 
 	const [recipeName, setRecipeName] = useState("");
+	const [recipeYieldSize, setRecipeYieldSize] = useState("1");
+	const [recipeYieldUnit, setRecipeYieldUnit] = useState("each");
 	const [pendingItems, setPendingItems] = useState<PendingRecipeItem[]>([]);
 
 	const [servingPickerFood, setServingPickerFood] = useState<Food | null>(null);
 	const [servingPickerOpen, setServingPickerOpen] = useState(false);
 
-	const [addFoodModalOpen, setAddFoodModalOpen] = useState(false);
+	const [recipeLogModalOpen, setRecipeLogModalOpen] = useState(false);
+	const [selectedRecipeToLog, setSelectedRecipeToLog] = useState<UserRecipe | null>(null);
+	const [recipeLogSlot, setRecipeLogSlot] = useState<Meal | null>(null);
 
 	const aliveRef = useRef(true);
 
@@ -98,6 +110,8 @@ export function useRecipeController(): RecipeController {
 	const clearPending = useCallback(() => {
 		setPendingItems([]);
 		setRecipeName("");
+		setRecipeYieldSize("1");
+		setRecipeYieldUnit("each");
 	}, []);
 
 	const saveRecipe = useCallback(async () => {
@@ -109,6 +123,17 @@ export function useRecipeController(): RecipeController {
 
 		if (pendingItems.length === 0) {
 			setError("Add at least one food item");
+			return;
+		}
+
+		const yieldSize = Number(recipeYieldSize);
+		if (!Number.isFinite(yieldSize) || yieldSize <= 0) {
+			setError("Yield size must be a positive number");
+			return;
+		}
+
+		if (!recipeYieldUnit.trim()) {
+			setError("Yield unit is required");
 			return;
 		}
 
@@ -125,7 +150,12 @@ export function useRecipeController(): RecipeController {
 			fat: p.fat,
 		}));
 
-		const res = await createRecipe({ name: recipeName.trim(), items });
+		const res = await createRecipe({
+			name: recipeName.trim(),
+			yield_size: yieldSize,
+			yield_unit: recipeYieldUnit.trim(),
+			items,
+		});
 
 		setSaving(false);
 
@@ -136,9 +166,11 @@ export function useRecipeController(): RecipeController {
 
 		setPendingItems([]);
 		setRecipeName("");
+		setRecipeYieldSize("1");
+		setRecipeYieldUnit("each");
 		fetchRecipes();
 
-	}, [recipeName, pendingItems, fetchRecipes]);
+	}, [recipeName, recipeYieldSize, recipeYieldUnit, pendingItems, fetchRecipes]);
 
 	const onSearch = useCallback(async (text: string): Promise<Food[]> => {
 
@@ -163,8 +195,21 @@ export function useRecipeController(): RecipeController {
 		setServingPickerFood(null);
 	}
 
-	function openAddFoodModal() { setAddFoodModalOpen(true); }
-	function closeAddFoodModal() { setAddFoodModalOpen(false); }
+	function openRecipeLogModal(recipe: UserRecipe, slot: Meal | null = null) {
+		setSelectedRecipeToLog(recipe);
+		setRecipeLogSlot(slot);
+		setRecipeLogModalOpen(true);
+	}
+
+	function closeRecipeLogModal() {
+		setRecipeLogModalOpen(false);
+		setSelectedRecipeToLog(null);
+		setRecipeLogSlot(null);
+	}
+
+	const onLogRecipe = useCallback(async (food: Food, meal: number, date: string) => {
+		await logFood(food, meal, date);
+	}, []);
 
 	return {
 		loading,
@@ -175,6 +220,10 @@ export function useRecipeController(): RecipeController {
 		deleteSavedRecipe,
 		recipeName,
 		setRecipeName,
+		recipeYieldSize,
+		setRecipeYieldSize,
+		recipeYieldUnit,
+		setRecipeYieldUnit,
 		pendingItems,
 		addItemToPending,
 		removeItemFromPending,
@@ -185,8 +234,11 @@ export function useRecipeController(): RecipeController {
 		servingPickerOpen,
 		openServingPicker,
 		closeServingPicker,
-		addFoodModalOpen,
-		openAddFoodModal,
-		closeAddFoodModal,
+		recipeLogModalOpen,
+		selectedRecipeToLog,
+		recipeLogSlot,
+		openRecipeLogModal,
+		closeRecipeLogModal,
+		onLogRecipe,
 	};
 }

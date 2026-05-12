@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { UserRecipe } from "@/lib/dataTypes";
+import { Food, UserRecipe } from "@/lib/dataTypes";
 import { Meal, mealForNow } from "@/lib/utils/meal";
 import { MEALS, mealColors } from "@/lib/ui/mealColors";
 
@@ -10,7 +10,8 @@ type Props = {
 	onClose: () => void;
 	recipe: UserRecipe | null;
 	slot: Meal | null;
-	onLog: (recipe: UserRecipe, qty: number, slot: Meal) => Promise<void>;
+	logDate: string;
+	onLog: (food: Food, meal: number, date: string) => Promise<void>;
 };
 
 function round1(n: number) { return Math.round(n * 10) / 10; }
@@ -25,7 +26,7 @@ const inputBase =
 
 const labelBase = "block text-sm font-medium text-slate-800 dark:text-slate-200 mb-1";
 
-export default function LogRecipe({ isOpen, onClose, recipe, slot, onLog }: Props) {
+export default function AddRecipeToLog({ isOpen, onClose, recipe, slot, logDate, onLog }: Props) {
 
 	const [qty, setQty] = useState("");
 	const [meal, setMeal] = useState<Meal>(mealForNow());
@@ -67,9 +68,21 @@ export default function LogRecipe({ isOpen, onClose, recipe, slot, onLog }: Prop
 	async function handleLog(e: React.FormEvent) {
 		e.preventDefault();
 		const q = Number(qty);
-		if (!Number.isFinite(q) || q <= 0) return;
+		if (!recipe || !Number.isFinite(q) || q <= 0) return;
+		const food: Food = {
+			id: null,
+			name: recipe.name,
+			brand: "",
+			calories: scaled.calories,
+			protein: scaled.protein,
+			carbs: scaled.carbs,
+			fat: scaled.fat,
+			serving_size: q,
+			serving_unit: recipe.yield_unit,
+			is_verified: false,
+		};
 		setLogging(true);
-		await onLog(recipe!, q, meal);
+		await onLog(food, MEALS.indexOf(meal), logDate);
 		setLogging(false);
 		onClose();
 	}
