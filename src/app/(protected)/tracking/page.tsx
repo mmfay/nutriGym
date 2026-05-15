@@ -336,7 +336,18 @@ export default function FoodTracker() {
 							key={recipe.id}
 							recipe={recipe}
 							onClick={() => rc.openRecipeLogModal(recipe, null)}
-							onQuickAdd={(meal) => rc.openRecipeLogModal(recipe, meal)}
+							onQuickAdd={(meal) => addFood({
+								id: null,
+								name: recipe.name,
+								brand: "",
+								calories: Math.round(recipe.items.reduce((s, i) => s + Number(i.calories), 0)),
+								protein: Math.round(recipe.items.reduce((s, i) => s + Number(i.protein), 0) * 10) / 10,
+								carbs:   Math.round(recipe.items.reduce((s, i) => s + Number(i.carbs),   0) * 10) / 10,
+								fat:     Math.round(recipe.items.reduce((s, i) => s + Number(i.fat),     0) * 10) / 10,
+								serving_size: recipe.yield_size,
+								serving_unit: recipe.yield_unit,
+								is_verified: false,
+							}, meal)}
 						/>
 					)
 				)}
@@ -428,7 +439,7 @@ export default function FoodTracker() {
 				recipe={rc.selectedRecipeToLog}
 				slot={rc.recipeLogSlot}
 				logDate={date}
-				onLog={rc.onLogRecipe}
+				onLog={fc.onLogFood}
 			/>
 			<MacroAI
 				isOpen={fc.macroAIModalOpen}

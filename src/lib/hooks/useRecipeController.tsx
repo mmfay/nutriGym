@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import { searchFood, logFood } from "../api/food/food";
+import { searchFood } from "../api/food/food";
 import { getRecipes, createRecipe, deleteRecipe } from "../api/recipes/recipes";
 import { Food, RecipeItemCreate, PendingRecipeItem, UserRecipe } from "../dataTypes";
 import { Meal } from "../utils/meal";
@@ -39,7 +39,6 @@ export type RecipeController = {
 	recipeLogModalOpen: boolean;
 	openRecipeLogModal: (recipe: UserRecipe, slot?: Meal | null) => void;
 	closeRecipeLogModal: () => void;
-	onLogRecipe: (food: Food, meal: number, date: string) => Promise<void>;
 };
 
 export function useRecipeController(): RecipeController {
@@ -207,10 +206,6 @@ export function useRecipeController(): RecipeController {
 		setRecipeLogSlot(null);
 	}
 
-	const onLogRecipe = useCallback(async (food: Food, meal: number, date: string) => {
-		await logFood(food, meal, date);
-	}, []);
-
 	return {
 		loading,
 		saving,
@@ -239,6 +234,5 @@ export function useRecipeController(): RecipeController {
 		recipeLogSlot,
 		openRecipeLogModal,
 		closeRecipeLogModal,
-		onLogRecipe,
 	};
 }

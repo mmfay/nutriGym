@@ -87,6 +87,7 @@ export default function NavBar() {
 					>
 					<option value="/home">Home</option>
 					<option value="/tracking">Tracking</option>
+					<option value="/kitchen">Kitchen</option>
 					</select>
 				</div>
 				</>
