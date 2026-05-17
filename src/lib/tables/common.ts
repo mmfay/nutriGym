@@ -12,17 +12,6 @@ import { PoolClient, QueryResult } from "pg";
  * This allows higher-level services to control transactions when needed,
  * while keeping simple queries lightweight.
  *
- * Example — simple query:
- *   const users = new Users();
- *   const row = await users.fetchOne("SELECT * FROM users WHERE id = $1", [id]);
- *
- * Example — transaction:
- *   await Common.withTransaction(async (client) => {
- *     const users = new Users(client);
- *     const food  = new Food(client);
- *     await users.deactivate(userId);
- *     await food.removeAll(userId);
- *   });
  */
 export class Common {
 
