@@ -1,4 +1,11 @@
 drop table if exists users cascade;
+drop table if exists auth_sessions cascade;
+drop table if exists weight cascade;
+drop table if exists food cascade;
+drop table if exists food_tracker cascade;
+drop table if exists macro_goals cascade;
+drop table if exists meal_items cascade;
+drop table if exists meals cascade;
 
 -- Users table
 create table if not exists users (
@@ -34,12 +41,6 @@ create table if not exists users (
     )
 );
 
-insert into users (id, email, name, password_hash)
-values
-    ('dff70ba7-9dd9-4743-98fa-bdcf208dc69e', 'test@example.com', 'Test User', 'password123');
-
-drop table if exists auth_sessions cascade;
-
 -- Sessions 
 create table if not exists auth_sessions (
     id         text primary key,                                        -- opaque sid (e.g., nanoid)
@@ -49,32 +50,12 @@ create table if not exists auth_sessions (
     expires_at timestamptz not null
 );
 
-create index if not exists auth_sessions_user_idx    on auth_sessions(user_id);
-create index if not exists auth_sessions_expires_idx on auth_sessions(expires_at);
-
-drop table if exists weight cascade;
-
 create table if not exists weight (
     user_id uuid not null references users(id) on delete cascade,
     measured_at date not null,             
     weight numeric(6,2) not null,          
     unit text check (unit in ('lb','kg')) default 'lb'
 );
-
--- One weight entry per user per day 
-create unique index if not exists idx_weights_user_date on weight (user_id, measured_at)
-  	include (weight, unit);            -- cover common selects
-
-insert into weight (user_id, measured_at, weight, unit)
-values 
-    ('dff70ba7-9dd9-4743-98fa-bdcf208dc69e', '2025-09-07', 182.4, 'lb'),
-    ('dff70ba7-9dd9-4743-98fa-bdcf208dc69e', '2025-09-09', 182.1, 'lb'),
-    ('dff70ba7-9dd9-4743-98fa-bdcf208dc69e', '2025-09-10', 182.4, 'lb'),
-    ('dff70ba7-9dd9-4743-98fa-bdcf208dc69e', '2025-09-11', 182.1, 'lb'),
-    ('dff70ba7-9dd9-4743-98fa-bdcf208dc69e', '2025-09-12', 182.4, 'lb'),
-    ('dff70ba7-9dd9-4743-98fa-bdcf208dc69e', '2025-09-13', 182.1, 'lb');
-
-drop table if exists food cascade;
 
 create table if not exists food (
 	id                bigserial primary key,
@@ -98,25 +79,6 @@ create table if not exists food (
 		)
 );
 
-create index if not exists idx_foods_barcode on food (barcode);
-
--- Seed foods with fixed IDs
-insert into food (name, brand, barcode, serving_size, serving_unit, serving_type, count_name, protein, carbs, fat, calories) values
-	('Apple',   'Generic', '0000000000001', 182.00, 'g', 'COUNT', 'Each', 0.50, 25.10, 0.30,  95.00),
-	('Banana', 'Generic', '0000000000002', 118.00, 'g', 'COUNT', 'Each', 1.30, 27.00, 0.30, 105.00),
-	('Chicken Breast', 'Generic', '0000000000003', 100.00, 'g', 'MEASURE', 31.00, 0.00, 3.60, 165.00),
-	('Milk 2%', 'Dairy Pure', '0000000000004', 244.00, 'ml', 'MEASURE', 8.00, 12.00, 5.00, 122.00),
-	('Olive Oil', 'Generic', '0000000000005', 14.00,  'g', 'MEASURE', 0.00,  0.00, 13.50, 119.00),
-	('Oats', 'Generic', '0000000000006', 40.00,  'g', 'MEASURE', 5.00, 27.00, 3.00, 150.00),
-	('Greek Yogurt (nonfat)', 'Generic', '0000000000007', 170.00, 'g', 'MEASURE', 17.00,  6.00, 0.00, 100.00),
-	('Peanut Butter', 'Generic', '0000000000008', 32.00, 'g', 'MEASURE', 8.00,  7.00, 16.00, 190.00),
-	('Rice (cooked, white)', 'Generic', '0000000000009', 158.00, 'g', 'MEASURE', 4.30, 45.00, 0.40, 205.00),
-	('Egg, Large', 'Generic', '0000000000010', 1.00,   'g', 'COUNT', 'Each', 6.30, 0.40, 4.80,  72.00),
-	('Protein Bar - Chocolate', 'FitBrand', '0000000000011', 60.00, 'g', 'COUNT', 'Bar', 20.00, 23.00, 7.00, 250.00),
-	('Orange', 'Generic', '0000000000012', 131.00, 'g', 'COUNT', 'Each', 1.20, 15.40, 0.20,  62.00);
-
-drop table if exists food_tracker cascade;
-
 create table if not exists food_tracker (
 	id                	bigserial primary key,
 	meal 				int not null, 
@@ -131,10 +93,6 @@ create table if not exists food_tracker (
 	serving_unit        text
 );
 
-create index if not exists food_tracker_user_idx    on food_tracker(user_id);
-
-drop table if exists macro_goals cascade;
-
 create table if not exists macro_goals (
     user_id uuid not null references users(id) on delete cascade,
     date_from date not null,   
@@ -144,11 +102,6 @@ create table if not exists macro_goals (
     protein numeric(6,2) not null,
     calories numeric(6,2) not null
 );
-
-create index if not exists macro_goal_user_idx    on macro_goals(user_id);
-
-insert into macro_goals (user_id, date_from, calories, carbs, fat, protein) values
-  ('dff70ba7-9dd9-4743-98fa-bdcf208dc69e','2025-09-11',2000,200,70,170);
 
 CREATE OR REPLACE VIEW food_log_v AS
 	SELECT
@@ -192,6 +145,25 @@ CREATE OR REPLACE VIEW food_log_v AS
 	FROM food_tracker ft
 	JOIN food f ON f.id = ft.food_id;
 
+create table if not exists meals (
+	id        bigserial primary key,
+	user_id   uuid not null references users(id) on delete cascade,
+	name      text not null,
+	created_at timestamptz not null default now()
+);
+
+create table if not exists meal_items (
+	id           bigserial primary key,
+	meal_id      bigint not null references meals(id) on delete cascade,
+	food_id      bigint not null references food(id),
+	serving_size numeric(7,2) not null default 1,
+	serving_unit text,
+	protein      numeric(7,2) not null default 0,
+	carbs        numeric(7,2) not null default 0,
+	fat          numeric(7,2) not null default 0,
+	calories     numeric(7,2) not null default 0
+);
+
 create table ai_daily_usage (
 	user_id     uuid not null,
 	usage_date  date not null,
@@ -209,12 +181,3 @@ CREATE TABLE password_reset_tokens (
     used_at timestamptz NULL,
     created_at timestamptz NOT NULL DEFAULT now()
 );
-
-CREATE INDEX idx_password_reset_tokens_user_id
-    ON password_reset_tokens(user_id);
-
-CREATE INDEX idx_password_reset_tokens_expires_at
-    ON password_reset_tokens(expires_at);
-
-CREATE UNIQUE INDEX idx_password_reset_tokens_token_hash
-    ON password_reset_tokens(token_hash);

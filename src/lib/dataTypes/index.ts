@@ -136,3 +136,53 @@ export type Weight = {
 }
 
 export type Input = Date | string | number;
+
+export type UserRecipeItem = {
+	id: number;
+	food_id: number;
+	food_name: string;
+	brand: string;
+	serving_size: number;
+	serving_unit: string;
+	calories: number;
+	protein: number;
+	carbs: number;
+	fat: number;
+};
+
+export type UserRecipe = {
+	id: number;
+	name: string;
+	created_at: string;
+	yield_size: number;
+	yield_unit: string;
+	items: UserRecipeItem[];
+};
+
+export type RecipeItemCreate = {
+	food_id: number;
+	serving_size: number;
+	serving_unit: string;
+	calories: number;
+	protein: number;
+	carbs: number;
+	fat: number;
+};
+
+export type RecipeCreate = {
+	name: string;
+	yield_size: number;
+	yield_unit: string;
+	items: RecipeItemCreate[];
+};
+
+export type PendingRecipeItem = {
+	tempId: string;
+	food: Food;
+	serving_size: number;
+	serving_unit: string;
+	calories: number;
+	protein: number;
+	carbs: number;
+	fat: number;
+};

@@ -5,13 +5,15 @@ import { todayLocalISO, formatShortDate } from "@/lib/utils/date";
 import { Meal, mealForNow } from "@/lib/utils/meal";
 import AddFoodToLog from "@/app/components/Modals/AddFoodToLog";
 import AddFood from "@/app/components/Modals/AddFood";
-import { useFoodController } from "@/lib/hooks/useFoodController";
+import AddRecipeToLog from "@/app/components/Modals/LogRecipe";
+import { useFoodController, useRecipeController } from "@/lib/hooks";
 import Tag from "@/app/components/Tag";
+import RecipeCard from "@/app/components/RecipeCard";
 import MacroAI from "@/app/components/Modals/MacroAI";
 import FoodCard from "@/app/components/FoodCard";
 
 // ---------- Types ----------
-type Mode = "recent" | "all";
+type Mode = "recent" | "all" | "recipes";
 
 // ---------- Dummy Data (for "All") ----------
 const MEALS: Meal[] = ["breakfast","lunch","dinner","snack"];
@@ -43,8 +45,9 @@ export default function FoodTracker() {
 
 	// controllers
 	const fc = useFoodController();
+	const rc = useRecipeController();
 
-	const [mode, setMode] = useState<Mode>("recent");
+	const [mode, setMode] = useState<Mode>("all");
 	const [query, setQuery] = useState("");
 	const [recentMealFilter, setRecentMealFilter] = useState<Meal>("breakfast");
 	const debouncedQuery = useDebouncedValue(query, 450);
@@ -95,6 +98,14 @@ export default function FoodTracker() {
 		fc.getFoodLog(date);
 
 	}, [date]);
+
+	// fetch saved recipes when recipes tab is selected
+	useEffect(() => {
+
+		if (mode !== "recipes") return;
+		rc.fetchRecipes();
+
+	}, [mode]);
 
     // fetch foods from search when mode is changed and query changes
     useEffect(() => {
@@ -200,7 +211,7 @@ export default function FoodTracker() {
 
 				{/* Tabs */}
 				<div className="flex gap-2 mb-2">
-				{(["recent","all"] as Mode[]).map(t => (
+				{(["all","recent","recipes"] as Mode[]).map(t => (
 					<button
 					key={t}
 					onClick={() => { setMode(t); setQuery(""); }}
@@ -257,6 +268,16 @@ export default function FoodTracker() {
 						onChange={(e) => setQuery(e.target.value)}
 					/>
 				)}
+
+				{mode === "recipes" && (
+					<input
+						className="w-full p-2 rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800"
+						placeholder="Search recipes…"
+						value={query}
+						onChange={(e) => setQuery(e.target.value)}
+					/>
+				)}
+
 			</div>
 
 			{/* LISTS */}
@@ -296,6 +317,40 @@ export default function FoodTracker() {
 					/>
 				))}
 				{mode === "all" && allFoods.length === 0 && !loadingAll && <Empty label="No foods match your search." />}
+
+				{mode === "recipes" && rc.loading && <div className="text-sm text-gray-500">Loading…</div>}
+
+				{mode === "recipes" && !rc.loading && rc.recipes.length === 0 && (
+					<Empty label="No saved recipes yet. Build one in the Kitchen." />
+				)}
+
+				{mode === "recipes" && !rc.loading && rc.recipes.length > 0 &&
+					rc.recipes.filter(r => !query.trim() || r.name.toLowerCase().includes(query.toLowerCase().trim())).length === 0 && (
+					<Empty label="No recipes match your search." />
+				)}
+
+				{mode === "recipes" && rc.recipes
+					.filter(r => !query.trim() || r.name.toLowerCase().includes(query.toLowerCase().trim()))
+					.map((recipe) => (
+						<RecipeCard
+							key={recipe.id}
+							recipe={recipe}
+							onClick={() => rc.openRecipeLogModal(recipe, null)}
+							onQuickAdd={(meal) => addFood({
+								id: null,
+								name: recipe.name,
+								brand: "",
+								calories: Math.round(recipe.items.reduce((s, i) => s + Number(i.calories), 0)),
+								protein: Math.round(recipe.items.reduce((s, i) => s + Number(i.protein), 0) * 10) / 10,
+								carbs:   Math.round(recipe.items.reduce((s, i) => s + Number(i.carbs),   0) * 10) / 10,
+								fat:     Math.round(recipe.items.reduce((s, i) => s + Number(i.fat),     0) * 10) / 10,
+								serving_size: recipe.yield_size,
+								serving_unit: recipe.yield_unit,
+								is_verified: false,
+							}, meal)}
+						/>
+					)
+				)}
 
 				<div className="h-8" />
 			</div>
@@ -376,6 +431,14 @@ export default function FoodTracker() {
 				food={fc.selectedFoodToLog}
 				logDate={date}
 				onClose={fc.closeFoodLogModal}
+				onLog={fc.onLogFood}
+			/>
+			<AddRecipeToLog
+				isOpen={rc.recipeLogModalOpen}
+				onClose={rc.closeRecipeLogModal}
+				recipe={rc.selectedRecipeToLog}
+				slot={rc.recipeLogSlot}
+				logDate={date}
 				onLog={fc.onLogFood}
 			/>
 			<MacroAI
