@@ -42,3 +42,4 @@ next-env.d.ts
 
 # DDL
 db/stage.sql
+db/inserts.sql

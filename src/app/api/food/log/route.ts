@@ -19,10 +19,10 @@ export async function POST(req: Request) {
 			loggedDate: Date;
 		};
 
-		if (foodItem.isAI) {
-			const aiFood = await logAIFood(userId, meal, loggedDate, foodItem);
-			return R.ok(aiFood, "AI Food Tracked Successfully");
-		} 
+		if (foodItem.isAI || foodItem.id === null) {
+			const result = await logAIFood(userId, meal, loggedDate, foodItem);
+			return R.ok(result, "Food Tracked Successfully");
+		}
 
 		const newLog = await logFood(userId, meal, loggedDate, foodItem);
 		return R.ok(newLog, "Food Tracked Successfully");

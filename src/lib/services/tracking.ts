@@ -117,7 +117,7 @@ export async function logAIFood(
 			food.serving_size,
 			food.serving_unit,
 			food.name,
-			food.isAI,
+			true,
 		];
 
 		const ins = await client.query<{ id: number }>(insertSql, insertParams);
