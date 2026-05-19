@@ -51,10 +51,12 @@ create table if not exists auth_sessions (
 );
 
 create table if not exists weight (
-    user_id uuid not null references users(id) on delete cascade,
-    measured_at date not null,             
-    weight numeric(6,2) not null,          
-    unit text check (unit in ('lb','kg')) default 'lb'
+	id					bigserial primary key,
+    user_id 			uuid not null references users(id) on delete cascade,
+    measured_at 		date not null,             
+    weight 				numeric(6,2) not null,          
+    unit 				text check (unit in ('lb','kg')) default 'lb',
+    constraint 			uq_weight_user_date unique (user_id, measured_at)
 );
 
 create table if not exists food (
