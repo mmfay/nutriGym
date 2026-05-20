@@ -96,13 +96,14 @@ create table if not exists food_tracker (
 );
 
 create table if not exists macro_goals (
-    user_id uuid not null references users(id) on delete cascade,
-    date_from date not null,   
-    date_to date,     
-    carbs numeric(6,2) not null, 
-    fat numeric(6,2) not null,    
-    protein numeric(6,2) not null,
-    calories numeric(6,2) not null
+	id                	bigserial primary key,
+    user_id 			uuid not null references users(id) on delete cascade,
+    date_from 			date not null,   
+    date_to 			date,     
+    carbs 				numeric(6,2) not null, 
+    fat 				numeric(6,2) not null,    
+    protein 			numeric(6,2) not null,
+    calories 			numeric(6,2) not null
 );
 
 CREATE OR REPLACE VIEW food_log_v AS
