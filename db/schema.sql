@@ -4,6 +4,7 @@ drop table if exists weight cascade;
 drop table if exists food cascade;
 drop table if exists food_tracker cascade;
 drop table if exists macro_goals cascade;
+drop table if exists ai_daily_usage cascade;
 drop table if exists meal_items cascade;
 drop table if exists meals cascade;
 
@@ -108,7 +109,7 @@ create table if not exists macro_goals (
 
 CREATE OR REPLACE VIEW food_log_v AS
 	SELECT
-		ft.id                    AS entry_id,
+		ft.id,
 		ft.user_id,
 		ft.meal,
 		CASE ft.meal
@@ -120,12 +121,12 @@ CREATE OR REPLACE VIEW food_log_v AS
 		END                      AS meal_name,
 		ft.recorded_at,
 		-- logged amounts (what the user actually tracked)
-		ft.serving_size          AS logged_serving_size,
-		ft.serving_unit          AS logged_serving_unit,
-		ft.protein               AS protein_logged,
-		ft.carbs                 AS carbs_logged,
-		ft.fat                   AS fat_logged,
-		ft.calories              AS calories_logged,
+		ft.serving_size          AS serving_size,
+		ft.serving_unit          AS serving_unit,
+		ft.protein               AS protein,
+		ft.carbs                 AS carbs,
+		ft.fat                   AS fat,
+		ft.calories              AS calories,
 
 		-- food catalog details
 		f.id                     AS food_id,
@@ -168,10 +169,11 @@ create table if not exists meal_items (
 );
 
 create table ai_daily_usage (
-	user_id     uuid not null,
-	usage_date  date not null,
-	used_count  int not null default 0,
-	updated_at  timestamptz not null default now(),
+	user_id     		uuid not null,
+	usage_date  		date not null,
+	used_count  		int not null default 0,
+	pending_count 		int not null default 0,
+	updated_at  		timestamptz not null default now(),
 	primary key (user_id, usage_date),
 	check (used_count >= 0)
 );
