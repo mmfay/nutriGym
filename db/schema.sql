@@ -5,8 +5,8 @@ drop table if exists food cascade;
 drop table if exists food_tracker cascade;
 drop table if exists macro_goals cascade;
 drop table if exists ai_daily_usage cascade;
-drop table if exists meal_items cascade;
-drop table if exists meals cascade;
+drop table if exists recipe_items cascade;
+drop table if exists recipes cascade;
 
 -- Users table
 create table if not exists users (
@@ -149,16 +149,18 @@ CREATE OR REPLACE VIEW food_log_v AS
 	FROM food_tracker ft
 	JOIN food f ON f.id = ft.food_id;
 
-create table if not exists meals (
-	id        bigserial primary key,
-	user_id   uuid not null references users(id) on delete cascade,
-	name      text not null,
-	created_at timestamptz not null default now()
+create table if not exists recipes (
+	id           bigserial primary key,
+	user_id      uuid not null references users(id) on delete cascade,
+	name         text not null,
+	yield_size   numeric(7,2) not null,
+	yield_unit   text not null,
+	created_at   timestamptz not null default now()
 );
 
-create table if not exists meal_items (
+create table if not exists recipe_items (
 	id           bigserial primary key,
-	meal_id      bigint not null references meals(id) on delete cascade,
+	recipe_id    bigint not null references recipes(id) on delete cascade,
 	food_id      bigint not null references food(id),
 	serving_size numeric(7,2) not null default 1,
 	serving_unit text,
