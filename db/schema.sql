@@ -84,16 +84,18 @@ create table if not exists food (
 
 create table if not exists food_tracker (
 	id                	bigserial primary key,
-	meal 				int not null, 
+	meal 				int not null,
 	user_id             uuid not null references users(id) on delete cascade,
-	food_id             bigserial not null references food(id),
-	recorded_at         date not null,        
-	carbs               numeric(6,2) not null, 
-	fat                 numeric(6,2) not null,    
-	protein             numeric(6,2) not null,   
-	calories            numeric(6,2) not null,          
+	food_id             bigint references food(id),
+	recorded_at         date not null,
+	carbs               numeric(6,2) not null,
+	fat                 numeric(6,2) not null,
+	protein             numeric(6,2) not null,
+	calories            numeric(6,2) not null,
 	serving_size        numeric(6,2) not null,
-	serving_unit        text
+	serving_unit        text,
+	food_name           text,
+	is_ai               boolean not null default false
 );
 
 create table if not exists macro_goals (
@@ -129,25 +131,26 @@ CREATE OR REPLACE VIEW food_log_v AS
 		ft.calories              AS calories,
 
 		-- food catalog details
-		f.id                     AS food_id,
-		f.name                   AS food_name,
+		f.id                                    AS food_id,
+		COALESCE(f.name, ft.food_name)          AS food_name,
 		f.brand,
 		f.barcode,
-		f.serving_size           AS food_serving_size,
-		f.serving_unit           AS food_serving_unit,
-		f.protein                AS food_protein_per_serving,
-		f.carbs                  AS food_carbs_per_serving,
-		f.fat                    AS food_fat_per_serving,
-		f.calories               AS food_calories_per_serving,
+		f.serving_size                          AS food_serving_size,
+		f.serving_unit                          AS food_serving_unit,
+		f.protein                               AS food_protein_per_serving,
+		f.carbs                                 AS food_carbs_per_serving,
+		f.fat                                   AS food_fat_per_serving,
+		f.calories                              AS food_calories_per_serving,
 
 		-- how many label servings the logged serving represents
 		CASE
 			WHEN f.serving_size > 0 THEN ft.serving_size / f.serving_size
 			ELSE NULL
-		END                      AS servings_equivalent
-		,f.is_verified
+		END                                     AS servings_equivalent,
+		f.is_verified,
+		ft.is_ai
 	FROM food_tracker ft
-	JOIN food f ON f.id = ft.food_id;
+	LEFT JOIN food f ON f.id = ft.food_id;
 
 create table if not exists recipes (
 	id           bigserial primary key,

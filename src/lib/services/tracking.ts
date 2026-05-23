@@ -87,7 +87,7 @@ export async function logAIFood(
 				serving_size,
 				serving_unit,
 				food_name,
-				isAI
+				is_ai
 			)
 			VALUES (
 				$1,
