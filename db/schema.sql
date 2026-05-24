@@ -61,24 +61,26 @@ create table if not exists weight (
 );
 
 create table if not exists food (
-	id                bigserial primary key,
-	name              text not null,            -- apple
-	brand             text,                     -- generic or 'orchard ..'
-	barcode           text unique,              -- optional (UPC/EAN)
-	serving_size      numeric(7,2) not null default 0,
-	serving_unit      text,
-	serving_type      text not null,
-	count_name        text,
-	protein           numeric(7,2) not null default 0,
-	carbs             numeric(7,2) not null default 0,
-	fat               numeric(7,2) not null default 0,
-	calories          numeric(7,2) not null default 0,  -- label calories, not computed
-	created_at        timestamptz not null default now(),
-	updated_at        timestamptz not null default now(),
-	is_verified		  boolean not null default false,
+	id                		bigserial primary key,
+	name              		text not null,            -- apple
+	brand             		text,                     -- generic or 'orchard ..'
+	barcode           		text unique,              -- optional (UPC/EAN)
+	serving_size      		numeric(7,2) not null default 0,
+	serving_unit      		text,
+	serving_type      		text not null,
+	count_name           	text,
+	serving_metric_size  	numeric(7,2),
+	serving_metric_unit  	text check (serving_metric_unit in ('g','ml')),
+	protein              	numeric(7,2) not null default 0,
+	carbs             		numeric(7,2) not null default 0,
+	fat               		numeric(7,2) not null default 0,
+	calories          		numeric(7,2) not null default 0,  -- label calories, not computed
+	created_at        		timestamptz not null default now(),
+	updated_at        		timestamptz not null default now(),
+	is_verified		  		boolean not null default false,
 	constraint chk_food_macros_nonneg
 		check (
-		protein >= 0 and carbs >= 0 and fat >= 0 and calories >= 0
+			protein >= 0 and carbs >= 0 and fat >= 0 and calories >= 0
 		)
 );
 
