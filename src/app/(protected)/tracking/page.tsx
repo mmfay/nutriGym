@@ -172,13 +172,22 @@ export default function FoodTracker() {
 	}, [query, foods]);
 
 	async function copyMeal(meal: Meal) {
+
 		setCopyingMeal((p) => ({ ...p, [meal]: true }));
+
 		try {
+
 			await fc.onCopyMeal(MEALS.indexOf(meal), date);
+			await fc.getFoodLog(date);
+
 		} catch (err) {
+
 			console.error(err);
+
 		} finally {
+
 			setCopyingMeal((p) => ({ ...p, [meal]: false }));
+			
 		}
 	}
 
