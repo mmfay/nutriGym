@@ -91,6 +91,13 @@ export async function getMacroData(photo: Blob): Promise<ApiResult<FoodMacros>> 
 }
 
 /**
+ * Copy a meal from the previous day into toDate
+ */
+export async function copyMeal(meal: number, toDate: string): Promise<ApiResult<FoodTracked[]>> {
+	return postJSON("/api/food/log/copy", { meal, toDate });
+}
+
+/**
  * Get Remaining AI Requests
  */
 export async function getRemainingAIRequests(): Promise<ApiResult<{requests: number}>> {

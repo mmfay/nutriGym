@@ -1,5 +1,6 @@
 "use client";
 import { useMemo, useState, useEffect, useRef } from "react";
+import { Copy } from "lucide-react";
 import { Food } from "@/lib/dataTypes";
 import { todayLocalISO, formatShortDate } from "@/lib/utils/date";
 import { Meal, mealForNow } from "@/lib/utils/meal";
@@ -59,6 +60,7 @@ export default function FoodTracker() {
 	const [date, setDate] = useState<string>(todayLocalISO());
 	const [foods, setFoods] = useState<Food[]>();
 	const [loadingAll, setLoadingAll] = useState(false);
+	const [copyingMeal, setCopyingMeal] = useState<Partial<Record<Meal, boolean>>>({});
 
 	useEffect(() => {
 		// run only on client
@@ -168,6 +170,17 @@ export default function FoodTracker() {
 		const q = query.toLowerCase().trim();
 		return q ? listAll.filter(f => nameIncludes(f, q)) : listAll;
 	}, [query, foods]);
+
+	async function copyMeal(meal: Meal) {
+		setCopyingMeal((p) => ({ ...p, [meal]: true }));
+		try {
+			await fc.onCopyMeal(MEALS.indexOf(meal), date);
+		} catch (err) {
+			console.error(err);
+		} finally {
+			setCopyingMeal((p) => ({ ...p, [meal]: false }));
+		}
+	}
 
 	// add a food to the users food log
 	async function addFood(food: Food, meal: Meal, servings = 1) {
@@ -385,13 +398,21 @@ export default function FoodTracker() {
 					>
 						{/* Colored header */}
 						<div className={["px-4 py-2 border-b", c.bg, c.border].join(" ")}>
-						<div className="grid grid-cols-[1fr_auto_1fr] items-center">
-							{/* Left */}
-							<h2 className={["font-semibold capitalize", c.text].join(" ")}>{m}</h2>
-							{/* Right */}
-							<span className={["justify-self-end text-xs tabular-nums", c.muted].join(" ")}>
-							{totalKcal} kcal
+						<div className="flex items-center">
+							<h2 className={["flex-1 font-semibold capitalize", c.text].join(" ")}>{m}</h2>
+							<span className={["text-xs tabular-nums", c.muted].join(" ")}>
+								{totalKcal} kcal
 							</span>
+							<div className="flex-1 flex justify-end">
+								<button
+									type="button"
+									onClick={() => copyMeal(m)}
+									disabled={copyingMeal[m]}
+									title="Copy from previous day"
+								>
+									<Copy size={14} />
+								</button>
+							</div>
 						</div>
 						</div>
 
