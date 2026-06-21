@@ -164,10 +164,10 @@ export async function insertUser(email: string, name: string, hashedPassword: st
 	}
 
 	const mailer = new Mailer();
-	mailer.sendVerificationEmail(createdUser.email, createdUser.name);
+	await mailer.sendVerificationEmail(createdUser.email, createdUser.name);
 
 	const newUserAlert = new Mailer();
-	newUserAlert.sendNewUserAlert(createdUser.email, createdUser.name, createdUser.created_at);
+	await newUserAlert.sendNewUserAlert(createdUser.email, createdUser.name, createdUser.created_at);
 
 	return createdUser;
 
