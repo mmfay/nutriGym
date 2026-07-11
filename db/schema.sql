@@ -7,6 +7,7 @@ drop table if exists macro_goals cascade;
 drop table if exists ai_daily_usage cascade;
 drop table if exists recipe_items cascade;
 drop table if exists recipes cascade;
+drop table if exists api_keys cascade;
 
 -- Users table
 create table if not exists users (
@@ -191,5 +192,13 @@ CREATE TABLE password_reset_tokens (
     token_hash text NOT NULL,
     expires_at timestamptz NOT NULL,
     used_at timestamptz NULL,
+    created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE api_keys (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id uuid NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+    key_hash text NOT NULL UNIQUE,
+    key_prefix text NOT NULL,
     created_at timestamptz NOT NULL DEFAULT now()
 );
