@@ -6,13 +6,13 @@ import { ResponseBuilder as R } from "../utils/response";
 export async function getWeightTrend(userId: string, days = 28) {
 
 	const { rows } = await pool.query(
-		`select 
+		`select
 			measured_at::text as date
-			,weight 
-		from weight 
-		where user_id=$1 and measured_at >= now() - interval '${days} days'
+			,weight
+		from weight
+		where user_id = $1 and measured_at >= now() - ($2 || ' days')::interval
 		order by measured_at asc`,
-		[userId]
+		[userId, days]
 	);
 	return rows;
 

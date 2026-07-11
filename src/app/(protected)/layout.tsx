@@ -1,5 +1,5 @@
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { getSession } from "@/lib/auth/session";
 
 export default async function ProtectedLayout({
 	children,
@@ -7,12 +7,9 @@ export default async function ProtectedLayout({
 	children: React.ReactNode;
 }) {
 
-	const cookieStore = await cookies();
+	const session = await getSession();
 
-	// ✅ change "session" to your real cookie name
-	const hasSession = cookieStore.get("sid")?.value;
-
-	if (!hasSession) {
+	if (!session) {
 		redirect("/login");
 	}
 

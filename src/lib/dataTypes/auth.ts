@@ -21,3 +21,15 @@ export type PasswordResetToken = {
 	used_at: Date | null;
 	created_at: Date;
 };
+
+export type ApiKeyMetadata = {
+	has_key: boolean;
+	key_prefix: string | null;
+	created_at: Date | null;
+};
+
+export type ApiKeyGenerated = {
+	key: string;
+	key_prefix: string;
+	created_at: Date;
+};

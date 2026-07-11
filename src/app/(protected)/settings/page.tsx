@@ -20,9 +20,14 @@ export default function SettingsPage() {
 	const [accountSuccess, setAccountSuccess] = useState<string | null>(null);
 	const [accountError, setAccountError] = useState<string | null>(null);
 
+	// api key loading/error handling
+	const [apiKeyError, setApiKeyError] = useState<string | null>(null);
+	const [apiKeyCopied, setApiKeyCopied] = useState(false);
+
 	// on open, trigger getting the user account info
 	useEffect(() => {
 		uc.getUserRecord();
+		uc.getApiKeyMetadata();
 	}, []);
 
 	// set the values or default
@@ -60,7 +65,50 @@ export default function SettingsPage() {
 
 	}
 
+	// handling api key generation
+	async function handleGenerateApiKey() {
+
+		setApiKeyError(null);
+		setApiKeyCopied(false);
+
+		try {
+			await uc.onGenerateApiKey();
+		} catch {
+			setApiKeyError("Unable to generate API key.");
+		}
+
+	}
+
+	// handling api key revocation
+	async function handleRevokeApiKey() {
+
+		setApiKeyError(null);
+		setApiKeyCopied(false);
+
+		try {
+			await uc.onRevokeApiKey();
+		} catch {
+			setApiKeyError("Unable to revoke API key.");
+		}
+
+	}
+
+	// handling copy-to-clipboard of a freshly generated key
+	async function handleCopyApiKey() {
+
+		if (!uc.generatedKey) return;
+
+		try {
+			await navigator.clipboard.writeText(uc.generatedKey);
+			setApiKeyCopied(true);
+		} catch {
+			setApiKeyError("Unable to copy API key.");
+		}
+
+	}
+
 	const userFormLoading = uc.userLoading && !uc.userRecord;
+	const apiKeyFormLoading = uc.apiKeyLoading && !uc.apiKeyMetadata;
 
 	return (
 		<div className="mx-auto max-w-3xl px-6 py-10">
@@ -168,6 +216,91 @@ export default function SettingsPage() {
 							</button>
 						</div>
 					</form>
+				</section>
+
+				<section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+					<div className="mb-5">
+						<h2 className="text-lg font-medium text-slate-900 dark:text-white">
+							API Key
+						</h2>
+						<p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+							Generate a personal API key to access your data programmatically.
+						</p>
+					</div>
+
+					{apiKeyFormLoading ? (
+						<Spinner />
+					) : (
+						<div className="space-y-4">
+							{uc.generatedKey && (
+								<div className="space-y-2 rounded-xl border border-amber-300 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950/40">
+									<p className="text-sm font-medium text-amber-800 dark:text-amber-300">
+										Copy this key now. You won&apos;t be able to see it again.
+									</p>
+									<code className="block break-all rounded-lg bg-white px-3 py-2 text-sm text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+										{uc.generatedKey}
+									</code>
+									<button
+										type="button"
+										onClick={handleCopyApiKey}
+										className="rounded-xl border border-amber-300 bg-white px-3 py-1.5 text-sm font-medium text-amber-800 hover:opacity-90 dark:border-amber-800 dark:bg-slate-950 dark:text-amber-300"
+									>
+										{apiKeyCopied ? "Copied!" : "Copy to clipboard"}
+									</button>
+								</div>
+							)}
+
+							{uc.apiKeyMetadata?.has_key ? (
+								<div className="flex items-center justify-between">
+									<div>
+										<p className="text-sm text-slate-700 dark:text-slate-200">
+											{uc.apiKeyMetadata.key_prefix}&hellip;
+										</p>
+										{uc.apiKeyMetadata.created_at && (
+											<p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+												Created {new Date(uc.apiKeyMetadata.created_at).toLocaleDateString()}
+											</p>
+										)}
+									</div>
+									<div className="flex gap-2">
+										<button
+											type="button"
+											onClick={handleGenerateApiKey}
+											disabled={uc.apiKeyLoading}
+											className="rounded-xl border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+										>
+											Regenerate
+										</button>
+										<button
+											type="button"
+											onClick={handleRevokeApiKey}
+											disabled={uc.apiKeyLoading}
+											className="rounded-xl border border-red-300 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/40"
+										>
+											Revoke
+										</button>
+									</div>
+								</div>
+							) : (
+								<div className="flex justify-end">
+									<button
+										type="button"
+										onClick={handleGenerateApiKey}
+										disabled={uc.apiKeyLoading}
+										className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-slate-900"
+									>
+										{uc.apiKeyLoading ? "Generating..." : "Generate API Key"}
+									</button>
+								</div>
+							)}
+
+							{apiKeyError && (
+								<p className="text-sm text-red-600 dark:text-red-400">
+									{apiKeyError}
+								</p>
+							)}
+						</div>
+					)}
 				</section>
 			</div>
 		</div>
