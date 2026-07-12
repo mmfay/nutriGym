@@ -87,7 +87,7 @@ export async function logAIFood(
 				serving_size,
 				serving_unit,
 				food_name,
-				isAI
+				is_ai
 			)
 			VALUES (
 				$1,
@@ -165,6 +165,29 @@ export async function getFoodLog(userId: string, date: string) {
 
 	const { rows } = await pool.query<FoodTracked[]>(sql, params);
 
+	return rows;
+
+}
+
+// copies a meal from the previous day into toDate
+export async function copyMealFromPrevDay(userId: string, meal: number, toDate: string): Promise<FoodTracked[]> {
+
+	const sql = `
+		WITH inserted AS (
+			INSERT INTO food_tracker (user_id, meal, food_id, recorded_at, carbs, fat, protein, calories, serving_size, serving_unit, food_name, is_ai)
+			SELECT user_id, meal, food_id, $3::date, carbs, fat, protein, calories, serving_size, serving_unit, food_name, is_ai
+			FROM food_tracker
+			WHERE user_id = $1 AND meal = $2 AND recorded_at = $3::date - interval '1 day'
+			RETURNING id
+		)
+		SELECT
+			v.id, v.meal, v.food_name AS name, v.brand, v.recorded_at,
+			v.carbs, v.fat, v.protein, v.calories, v.serving_size, v.serving_unit
+		FROM food_log_v v
+		JOIN inserted i ON i.id = v.id
+	`;
+
+	const { rows } = await pool.query<FoodTracked>(sql, [userId, meal, toDate]);
 	return rows;
 
 }

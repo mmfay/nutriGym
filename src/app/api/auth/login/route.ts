@@ -1,11 +1,11 @@
 export const runtime = "nodejs";
 
 import { ResponseBuilder as R } from "@/lib/utils/response";
-import pool from "@/lib/db/db";
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import { Users } from "@/lib/tables/users";
 import { AuthSessions } from "@/lib/tables/auth_sessions";
+import { SESSION_COOKIE } from "@/lib/auth/session";
 
 const SESSION_TTL_SEC = 60 * 60 * 24; // 1 Day
 
@@ -62,7 +62,7 @@ export async function POST(req: Request) {
 		const res = R.ok("User logged in successfully.");
 		
 		res.cookies.set({
-			name: "sid",
+			name: SESSION_COOKIE,
 			value: sid, // opaque only
 			httpOnly: true,
 			secure: process.env.NODE_ENV === "production",

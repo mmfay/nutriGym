@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 import pool from "@/lib/db/db";
 import { User } from "../dataTypes/auth";
 
-export const SESSION_COOKIE = "sid";
+export const SESSION_COOKIE = "ng_sid";
 
 export type Session = { user_id: string; data: any };
 export type UserRow = { id: string; name: string; email: string };

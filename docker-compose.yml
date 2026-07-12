@@ -8,7 +8,7 @@ services:
       POSTGRES_PASSWORD: nutrigym
       POSTGRES_DB: nutrigym
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - nutrigym_pgdata:/var/lib/postgresql/data
       - ./db/schema.sql:/docker-entrypoint-initdb.d/schema.sql
@@ -19,10 +19,8 @@ services:
       retries: 20
   
   app:
-    build:
-      context: ./
-      dockerfile: Dockerfile
-    container_name: nutrigym_frontend
+    image: mmfay3/nutrigym-app:latest
+    container_name: nutrigym_app
     restart: unless-stopped 
     depends_on:
       db:
@@ -30,6 +28,7 @@ services:
     env_file:
       - .env.docker
     ports: 
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
+
 volumes:
   nutrigym_pgdata:

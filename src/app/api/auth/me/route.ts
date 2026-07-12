@@ -12,7 +12,9 @@ export async function GET() {
 	const sess = await getSession();
 
 	if (!sess) {
-		return R.unauthorized("Unauthorized");
+		const res = R.unauthorized("Unauthorized");
+		res.cookies.set({ name: SESSION_COOKIE, value: "", path: "/", maxAge: 0 });
+		return res;
 	}
 
 	// get user so we can check for permissions on request

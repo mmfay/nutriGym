@@ -1,8 +1,8 @@
 // app/api/auth/logout/route.ts
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import pool from "@/lib/db/db";                // if you store sessions in DB
 import { SESSION_COOKIE } from "@/lib/auth/session";
+import { AuthSessions } from "@/lib/tables/auth_sessions";
 
 export async function POST() {
 	
@@ -12,7 +12,11 @@ export async function POST() {
 	// If you keep a server-side session, invalidate it
 	if (sid) {
 		try {
-			await pool.query(`delete from sessions where id = $1`, [sid]);
+			
+			const session = await AuthSessions.find(sid);
+
+			session?.delete();
+
 		} catch (e) {
 			// don't leak errors to client—logging is fine
 			console.error("logout: failed to delete session", e);
