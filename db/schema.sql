@@ -176,6 +176,25 @@ create table if not exists recipe_items (
 	calories     numeric(7,2) not null default 0
 );
 
+create table if not exists meals (
+	id        bigserial primary key,
+	user_id   uuid not null references users(id) on delete cascade,
+	name      text not null,
+	created_at timestamptz not null default now()
+);
+
+create table if not exists meal_items (
+	id           bigserial primary key,
+	meal_id      bigint not null references meals(id) on delete cascade,
+	food_id      bigint not null references food(id),
+	serving_size numeric(7,2) not null default 1,
+	serving_unit text,
+	protein      numeric(7,2) not null default 0,
+	carbs        numeric(7,2) not null default 0,
+	fat          numeric(7,2) not null default 0,
+	calories     numeric(7,2) not null default 0
+);
+
 create table ai_daily_usage (
 	user_id     		uuid not null,
 	usage_date  		date not null,
