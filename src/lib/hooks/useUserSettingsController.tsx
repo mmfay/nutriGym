@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { User } from "../dataTypes/auth";
+import { ApiKeyMetadata, User } from "../dataTypes/auth";
 import { getUserRecord as getUser, updateUserRecord } from "../api/usersettings/usersettings";
+import { getApiKeyMetadata as getApiKeyMetadataRequest, generateApiKey, revokeApiKey } from "../api/apikeys/apikeys";
 
 
 export type UserSettingsController = {
@@ -19,6 +20,14 @@ export type UserSettingsController = {
 
 	userRecord: User | undefined;
 
+	// api keys
+	apiKeyLoading: boolean;
+	apiKeyMetadata: ApiKeyMetadata | undefined;
+	generatedKey: string | null;
+	getApiKeyMetadata: () => Promise<void>;
+	onGenerateApiKey: () => Promise<void>;
+	onRevokeApiKey: () => Promise<void>;
+
 };
 
 export function useUserSettingsController(): UserSettingsController {
@@ -28,6 +37,10 @@ export function useUserSettingsController(): UserSettingsController {
 	const [error, setError] = useState<string | null>(null);
 
 	const [userRecord, setUserRecord] = useState<User>();
+
+	const [apiKeyLoading, setApiKeyLoading] = useState(false);
+	const [apiKeyMetadata, setApiKeyMetadata] = useState<ApiKeyMetadata>();
+	const [generatedKey, setGeneratedKey] = useState<string | null>(null);
 
 	// Tracks whether the component using this hook is still mounted
 	const aliveRef = useRef(true);
@@ -94,6 +107,72 @@ export function useUserSettingsController(): UserSettingsController {
 
 	}, [userRecord]);
 
+	// get API key metadata (never the raw key)
+	const getApiKeyMetadata = useCallback(async (): Promise<void> => {
+
+		setApiKeyLoading(true);
+		setError(null);
+
+		const res = await getApiKeyMetadataRequest();
+
+		if (!res.ok) {
+			setApiKeyLoading(false);
+			setError(res.message);
+			throw new Error(res.message);
+		}
+
+		setApiKeyMetadata(res.data);
+
+		setApiKeyLoading(false);
+
+	}, []);
+
+	// generate (or regenerate) the user's API key
+	const onGenerateApiKey = useCallback(async (): Promise<void> => {
+
+		setApiKeyLoading(true);
+		setError(null);
+
+		const res = await generateApiKey();
+
+		if (!res.ok) {
+			setApiKeyLoading(false);
+			setError(res.message);
+			throw new Error(res.message);
+		}
+
+		setGeneratedKey(res.data?.key ?? null);
+		setApiKeyMetadata({
+			has_key: true,
+			key_prefix: res.data?.key_prefix ?? null,
+			created_at: res.data?.created_at ?? null,
+		});
+
+		setApiKeyLoading(false);
+
+	}, []);
+
+	// revoke the user's API key
+	const onRevokeApiKey = useCallback(async (): Promise<void> => {
+
+		setApiKeyLoading(true);
+		setError(null);
+
+		const res = await revokeApiKey();
+
+		if (!res.ok) {
+			setApiKeyLoading(false);
+			setError(res.message);
+			throw new Error(res.message);
+		}
+
+		setGeneratedKey(null);
+		setApiKeyMetadata({ has_key: false, key_prefix: null, created_at: null });
+
+		setApiKeyLoading(false);
+
+	}, []);
+
 	return {
 		loading,
 		userLoading,
@@ -101,5 +180,11 @@ export function useUserSettingsController(): UserSettingsController {
 		getUserRecord,
 		onAccountUpdate,
 		userRecord,
+		apiKeyLoading,
+		apiKeyMetadata,
+		generatedKey,
+		getApiKeyMetadata,
+		onGenerateApiKey,
+		onRevokeApiKey,
 	};
 }

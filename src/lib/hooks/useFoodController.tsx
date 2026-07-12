@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { createFood, logFood, fetchFoodLog, deleteFoodLog, getRecentFoods, searchFood, getRemainingAIRequests } from "../api/food/food";
+import { createFood, logFood, fetchFoodLog, deleteFoodLog, getRecentFoods, searchFood, getRemainingAIRequests, copyMeal } from "../api/food/food";
 import { FoodCreate, Food, FoodTracked } from "../dataTypes";
 
 export type FoodsController = {
@@ -19,6 +19,7 @@ export type FoodsController = {
 	onCreate: (food: FoodCreate) => Promise<Food>;
 	onSearch: (text: string) => Promise<Food[]>;
 	onLogFood: (food: Food, meal: number, date: string) => Promise<void>;
+	onCopyMeal: (meal: number, date: string) => Promise<number>;
 	getFoodLog: (logDate: string) => Promise<void>;
 	getRecents: (meal: number) => Promise<void>;
 	getAIRequests: () => Promise<void>;
@@ -207,6 +208,26 @@ export function useFoodController(): FoodsController {
 
 	}, []);
 
+	// copies a meal from the previous day into the given date, returns count of items added
+	const onCopyMeal = useCallback(async (meal: number, date: string): Promise<number> => {
+
+		const res = await copyMeal(meal, date);
+
+		if (!res.ok) {
+			setError(res.message);
+			throw new Error(res.message);
+		}
+
+		const items = res.data ?? [];
+		
+		if (items.length > 0) {
+			setTrackedFood((prev) => [...prev, ...items]);
+		}
+
+		return items.length;
+
+	}, []);
+
 	// removes a logged food
 	const removeFoodLog = useCallback(async (id: number): Promise<void> => {
 		setLoading(true);
@@ -282,7 +303,8 @@ export function useFoodController(): FoodsController {
 		remainingAIRequests,
 		onCreate,
 		onSearch,
-		onLogFood,		
+		onLogFood,
+		onCopyMeal,
 		getAIRequests,
 		removeFoodLog,
 		getFoodLog,

@@ -43,3 +43,9 @@ next-env.d.ts
 # DDL
 db/stage.sql
 db/inserts.sql
+
+#AI Markdown Files
+CLAUDE.md
+
+# Store Trackers
+.storyTracker

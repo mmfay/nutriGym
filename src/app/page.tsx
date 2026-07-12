@@ -139,6 +139,7 @@ export default function LandingPage() {
 				<ul className="mt-2 space-y-2">
 				<li><a href="#features" className="hover:underline">Features</a></li>
 				<li><a href="#how" className="hover:underline">How it works</a></li>
+				<li><Link href="/api-docs" className="hover:underline">API</Link></li>
 				<li><Link href="/privacy" className="hover:underline">Privacy</Link></li>
 				<li><Link href="/terms" className="hover:underline">Terms</Link></li>
 				</ul>
@@ -155,4 +156,5 @@ export default function LandingPage() {
 		</footer>
 		</div>
 	);
+	
 }
