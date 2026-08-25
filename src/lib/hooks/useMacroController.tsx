@@ -43,8 +43,8 @@ export function useMacroController(): MacroController {
 		const res = await createMacroGoals(goal);
 
 		if (!res.ok) {
-			setError(res.error);
-			throw new Error(res.error);
+			setError(res.message);
+			throw new Error(res.message);
 		}
 
 		return res.data as MacroGoal;

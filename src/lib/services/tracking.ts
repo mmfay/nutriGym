@@ -194,16 +194,26 @@ export async function copyMealFromPrevDay(userId: string, meal: number, toDate: 
 
 // remove food from log
 export async function removeFood(userId: string, id: number) {
-	
+
 	const sql = `
     	DELETE FROM food_tracker WHERE user_id = $1 and id = $2
 	`;
 
 	const params = [userId, id];
-	
+
 	const result = await pool.query(sql, params);
-	
+
 	return;
+
+}
+
+// clears a user's entire food tracking history
+export async function clearFoodLog(userId: string) {
+
+	await pool.query(
+		`DELETE FROM food_tracker WHERE user_id = $1`,
+		[userId]
+	);
 
 }
 

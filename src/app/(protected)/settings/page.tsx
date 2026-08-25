@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useUserSettingsController } from "@/lib/hooks/useUserSettingsController";
+import { useFoodController } from "@/lib/hooks/useFoodController";
 import { TIMEZONES } from "@/lib/dataTypes/dropdownData";
 import Spinner from "@/app/components/Spinner";
 
@@ -9,6 +10,14 @@ export default function SettingsPage() {
 
 	// controller for user settings
 	const uc = useUserSettingsController();
+	// controller for tracking history (used here just to clear it)
+	const fc = useFoodController();
+
+	// clear history confirm/loading/result state
+	const [clearHistoryOpen, setClearHistoryOpen] = useState(false);
+	const [clearHistoryLoading, setClearHistoryLoading] = useState(false);
+	const [clearHistoryError, setClearHistoryError] = useState<string | null>(null);
+	const [clearHistorySuccess, setClearHistorySuccess] = useState<string | null>(null);
 
 	// account states for saving
 	const [name, setName] = useState("");
@@ -103,6 +112,27 @@ export default function SettingsPage() {
 			setApiKeyCopied(true);
 		} catch {
 			setApiKeyError("Unable to copy API key.");
+		}
+
+	}
+
+	// handling clearing of tracking history
+	async function handleClearHistory() {
+
+		setClearHistoryLoading(true);
+		setClearHistoryError(null);
+		setClearHistorySuccess(null);
+
+		try {
+
+			await fc.onClearHistory();
+			setClearHistorySuccess("Tracking history cleared.");
+			setClearHistoryOpen(false);
+
+		} catch {
+			setClearHistoryError("Unable to clear tracking history.");
+		} finally {
+			setClearHistoryLoading(false);
 		}
 
 	}
@@ -300,6 +330,73 @@ export default function SettingsPage() {
 								</p>
 							)}
 						</div>
+					)}
+				</section>
+
+				<section className="rounded-2xl border border-red-200 bg-white p-6 shadow-sm dark:border-red-900/60 dark:bg-slate-900">
+					<div className="mb-5">
+						<h2 className="text-lg font-medium text-red-700 dark:text-red-400">
+							Danger Zone
+						</h2>
+						<p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+							Permanently remove data from your account. These actions cannot be undone.
+						</p>
+					</div>
+
+					<div className="flex items-center justify-between gap-4">
+						<div>
+							<p className="text-sm font-medium text-slate-900 dark:text-white">
+								Clear tracking history
+							</p>
+							<p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+								Deletes every food you&apos;ve logged. Your foods, recipes, and weight entries are kept.
+							</p>
+						</div>
+
+						{!clearHistoryOpen ? (
+							<button
+								type="button"
+								onClick={() => {
+									setClearHistoryOpen(true);
+									setClearHistoryError(null);
+									setClearHistorySuccess(null);
+								}}
+								className="shrink-0 rounded-xl border border-red-300 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/40"
+							>
+								Clear history
+							</button>
+						) : (
+							<div className="flex shrink-0 items-center gap-2">
+								<button
+									type="button"
+									onClick={() => setClearHistoryOpen(false)}
+									disabled={clearHistoryLoading}
+									className="rounded-xl border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+								>
+									Cancel
+								</button>
+								<button
+									type="button"
+									onClick={handleClearHistory}
+									disabled={clearHistoryLoading}
+									className="rounded-xl bg-red-600 px-3 py-2 text-sm font-medium text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+								>
+									{clearHistoryLoading ? "Clearing..." : "Confirm: delete everything"}
+								</button>
+							</div>
+						)}
+					</div>
+
+					{clearHistoryError && (
+						<p className="mt-4 text-sm text-red-600 dark:text-red-400">
+							{clearHistoryError}
+						</p>
+					)}
+
+					{clearHistorySuccess && (
+						<p className="mt-4 text-sm text-emerald-600 dark:text-emerald-400">
+							{clearHistorySuccess}
+						</p>
 					)}
 				</section>
 			</div>

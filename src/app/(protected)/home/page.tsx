@@ -1,7 +1,6 @@
 "use client";
 
-import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import {
 	ResponsiveContainer,
 	LineChart,
@@ -12,16 +11,12 @@ import {
 	CartesianGrid,
 	BarChart,
 	Bar,
-	Legend,
-	PieChart,
-	Pie,
-	Cell,
+	Legend
 } from "recharts";
 import { WeightPoint, DayMacros, TodayMacros, MacroGoal, MacroGoalCreate } from "@/lib/dataTypes";
 import { fetchHomePagePayload } from "@/lib/api/payloads/home";
-import { DEFAULT_GOAL, DEFAULT_TODAY, WeightCreate } from "@/lib/dataTypes";
+import { DEFAULT_TODAY, WeightCreate } from "@/lib/dataTypes";
 import AddWeightModal from "@/app/components/AddWeight";
-import { addNewWeight } from "@/lib/api/weight/weight";
 import AddFood from "@/app/components/Modals/AddFood";
 import { useFoodController } from "@/lib/hooks/useFoodController";
 import { useMacroController } from "@/lib/hooks/useMacroController";
@@ -227,7 +222,16 @@ export default function HomePage() {
 			<div className="lg:col-span-2 rounded-3xl border border-slate-200/60 dark:border-slate-700/60 bg-white/70 dark:bg-slate-900/70 backdrop-blur p-6">
 				{goal ? (
 				<>
-					<div className="text-sm font-medium text-slate-900 dark:text-white">Today</div>
+					<div className="flex items-center justify-between">
+						<div className="text-sm font-medium text-slate-900 dark:text-white">Today</div>
+						<button
+							type="button"
+							onClick={mc.openGoalModal}
+							className="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline"
+						>
+							Edit goals
+						</button>
+					</div>
 
 					<div className="mt-4 grid grid-cols-2 gap-3 text-sm">
 					<div className="space-y-1">
@@ -423,6 +427,7 @@ export default function HomePage() {
 			isOpen={mc.goalModalOpen}
 			onClose={mc.closeGoalModal}
 			onCreate={handleGoalCreate}
+			initialGoal={goal}
 		/>
 		</div>
 	);

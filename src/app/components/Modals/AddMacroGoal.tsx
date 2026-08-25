@@ -9,9 +9,12 @@ type AddMacroGoalProps = {
 	isOpen: boolean;
 	onClose: () => void;
 	onCreate: (goal: MacroGoalCreate) => Promise<MacroGoal>;
+	initialGoal?: MacroGoal | null;
 };
 
-export default function AddMacroGoal({ isOpen, onClose, onCreate }: AddMacroGoalProps) {
+export default function AddMacroGoal({ isOpen, onClose, onCreate, initialGoal = null }: AddMacroGoalProps) {
+
+	const isEditing = !!initialGoal;
 
 	// states
 	const [touched, setTouched] = useState<Record<string, boolean>>({});
@@ -86,14 +89,14 @@ export default function AddMacroGoal({ isOpen, onClose, onCreate }: AddMacroGoal
 		return errors;
 	}, [fat, carbs, protein]);
 
-	// optional: reset fields each time the modal opens
+	// reset fields each time the modal opens, pre-filling when editing
 	useEffect(() => {
 		if (!isOpen) return;
 		setTouched({});
-		setFat("");
-		setCarbs("");
-		setProtein("");
-	}, [isOpen]);
+		setFat(initialGoal ? String(initialGoal.fat) : "");
+		setCarbs(initialGoal ? String(initialGoal.carbs) : "");
+		setProtein(initialGoal ? String(initialGoal.protein) : "");
+	}, [isOpen, initialGoal]);
 
 	if (!isOpen) return null;
 
@@ -104,7 +107,9 @@ export default function AddMacroGoal({ isOpen, onClose, onCreate }: AddMacroGoal
 			<div className="px-6 pt-5 pb-4 border-b border-slate-200/60 dark:border-slate-700/60">
 			<div className="flex items-start justify-between gap-3">
 				<div>
-				<h4 className="text-base font-semibold text-slate-900 dark:text-white">Set Macro Goals</h4>
+				<h4 className="text-base font-semibold text-slate-900 dark:text-white">
+					{isEditing ? "Edit Macro Goals" : "Set Macro Goals"}
+				</h4>
 				</div>
 			</div>
 			</div>
@@ -213,7 +218,7 @@ export default function AddMacroGoal({ isOpen, onClose, onCreate }: AddMacroGoal
 					hover:from-indigo-400 hover:to-purple-400
 					active:scale-95 transition"
 				>
-					Save Goals
+					{isEditing ? "Update Goals" : "Save Goals"}
 				</button>
 				</div>
 			</div>

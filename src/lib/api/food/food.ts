@@ -75,6 +75,13 @@ export async function deleteFoodLog(id: number): Promise<ApiResult<FoodTracked[]
 }
 
 /**
+ * Clear a user's entire tracking history
+ */
+export async function clearFoodLog(): Promise<ApiResult<null>> {
+	return deleteJSON("/api/food/log/clear");
+}
+
+/**
  * Get Recent Foods by Meal
  */
 export async function getRecentFoods(meal: number): Promise<ApiResult<Food[]>> {

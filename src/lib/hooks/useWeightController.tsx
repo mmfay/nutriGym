@@ -3,14 +3,19 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { WeightCreate, Weight } from "../dataTypes";
-import { addNewWeight } from "../api/weight/weight";
+import { addNewWeight, fetchWeightHistory, deleteWeight } from "../api/weight/weight";
 
 export type WeightController = {
 
 	loading: boolean;
 	error: string | null;
 
+	history: Weight[];
+	loadingHistory: boolean;
+
 	onCreate: (food: WeightCreate) => Promise<Weight>;
+	fetchHistory: () => Promise<void>;
+	onDelete: (id: number) => Promise<void>;
 
 	openWeightModal: () => void;
 	closeWeightModal: () => void;
@@ -22,6 +27,9 @@ export function useWeightController(): WeightController {
 
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+
+	const [history, setHistory] = useState<Weight[]>([]);
+	const [loadingHistory, setLoadingHistory] = useState(false);
 
 	const [weightModalOpen, setWeightModalOpen] = useState(false);
 
@@ -55,6 +63,41 @@ export function useWeightController(): WeightController {
 		, []
 	);
 
+	// fetches the full weight history for the measurements page
+	const fetchHistory = useCallback(async (): Promise<void> => {
+
+		setLoadingHistory(true);
+		setError(null);
+
+		const res = await fetchWeightHistory();
+
+		if (!res.ok) {
+			setError(res.message);
+			setLoadingHistory(false);
+			return;
+		}
+
+		setHistory(res.data ?? []);
+		setLoadingHistory(false);
+
+	}, []);
+
+	// deletes a weight entry
+	const onDelete = useCallback(async (id: number): Promise<void> => {
+
+		setError(null);
+
+		const res = await deleteWeight(id);
+
+		if (!res.ok) {
+			setError(res.message);
+			return;
+		}
+
+		setHistory((prev) => prev.filter((w) => w.id !== id));
+
+	}, []);
+
 	// opens food modal
 	function openWeightModal() {
 		setWeightModalOpen(true);
@@ -68,7 +111,11 @@ export function useWeightController(): WeightController {
 	return {
 		loading,
 		error,
+		history,
+		loadingHistory,
 		onCreate,
+		fetchHistory,
+		onDelete,
 		openWeightModal,
 		closeWeightModal,
 		weightModalOpen,

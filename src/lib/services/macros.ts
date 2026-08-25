@@ -1,7 +1,6 @@
 // lib/services/macros.ts
 import pool from "@/lib/db/db";
 import { DayMacros, MacroGoal, MacroGoalCreate } from "../dataTypes";
-import { ResponseBuilder as R } from "../utils/response";
 
 export async function getMacroTrend(userId: string, userDate: string, days = 14) {
     
@@ -95,22 +94,40 @@ export async function getTodayGoals(userId: string) {
     
 }
 
-// get current users goals for today
+// sets (or updates) a user's macro goals, closing out the previously active goal
 export async function setMacroGoals(userId: string, goal: MacroGoalCreate) {
-    console.log(`USERID: ${userId}, GOAL: ${goal}`);
-	
-	const sql = `
-		INSERT INTO macro_goals (calories, protein, carbs, fat, user_id, date_from) 
-		VALUES ($1, $2, $3, $4, $5, CURRENT_DATE)
-		RETURNING id, calories, protein, carbs, fat;
-    `;
 
-	const { rows } = await pool.query<MacroGoal>(sql, [goal.calories, goal.protein, goal.carbs, goal.fat, userId]);
+	const client = await pool.connect();
 
-	if (!rows) {
-		return R.serverError("Server was not able to process new Goal, please retry");
+	try {
+
+		await client.query("BEGIN");
+
+		// close out the currently active goal period, if any
+		await client.query(
+			`UPDATE macro_goals SET date_to = CURRENT_DATE WHERE user_id = $1 AND date_to IS NULL`,
+			[userId]
+		);
+
+		const { rows } = await client.query<MacroGoal>(
+			`INSERT INTO macro_goals (calories, protein, carbs, fat, user_id, date_from)
+			VALUES ($1, $2, $3, $4, $5, CURRENT_DATE)
+			RETURNING id, calories, protein, carbs, fat;`,
+			[goal.calories, goal.protein, goal.carbs, goal.fat, userId]
+		);
+
+		if (!rows[0]) {
+			throw new Error("Server was not able to process new Goal, please retry");
+		}
+
+		await client.query("COMMIT");
+		return rows[0];
+
+	} catch (e) {
+		await client.query("ROLLBACK");
+		throw e;
+	} finally {
+		client.release();
 	}
-    
-	return rows[0];
-    
+
 }

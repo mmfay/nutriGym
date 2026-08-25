@@ -18,6 +18,33 @@ export async function getWeightTrend(userId: string, days = 28) {
 
 }
 
+// full weight history (with ids) for the measurements page, newest first
+export async function getWeightHistory(userId: string): Promise<Weight[]> {
+
+	const { rows } = await pool.query<Weight>(
+		`select
+			id
+			,measured_at::text as measured_at
+			,weight
+		from weight
+		where user_id = $1
+		order by measured_at desc`,
+		[userId]
+	);
+	return rows;
+
+}
+
+// deletes a single weight entry belonging to the user
+export async function deleteWeight(userId: string, id: number) {
+
+	await pool.query(
+		`delete from weight where user_id = $1 and id = $2`,
+		[userId, id]
+	);
+
+}
+
 // adds weight and if old date specified it updates it, then returns trend to front end
 export async function addWeight(userId: string, dateOfWeight: Date, weight: number) {
 

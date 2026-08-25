@@ -2,10 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { createFood, logFood, fetchFoodLog, deleteFoodLog, getRecentFoods, searchFood, getRemainingAIRequests, copyMeal } from "../api/food/food";
+import { createFood, logFood, fetchFoodLog, deleteFoodLog, clearFoodLog, getRecentFoods, searchFood, getRemainingAIRequests, copyMeal } from "../api/food/food";
 import { FoodCreate, Food, FoodTracked } from "../dataTypes";
 
 export type FoodsController = {
+	
 	loading: boolean;
 	error: string | null;
 
@@ -24,6 +25,7 @@ export type FoodsController = {
 	getRecents: (meal: number) => Promise<void>;
 	getAIRequests: () => Promise<void>;
 	removeFoodLog: (id: number) => Promise<void>;
+	onClearHistory: () => Promise<void>;
 
 	openFoodModal: () => void;
 	closeFoodModal: () => void;
@@ -245,6 +247,24 @@ export function useFoodController(): FoodsController {
 		setLoading(false);
 	}, []);
 
+	// clears all tracking history for the user
+	const onClearHistory = useCallback(async (): Promise<void> => {
+		setLoading(true);
+		setError(null);
+
+		const res = await clearFoodLog();
+
+		if (!res.ok) {
+			setError(res.message);
+			setLoading(false);
+			throw new Error(res.message);
+		}
+
+		setTrackedFood([]);
+		setRecentsByMeal({});
+		setLoading(false);
+	}, []);
+
 	// searches for a food 
 	const onSearch = useCallback(
 		async (text: string): Promise<Food[]> => {
@@ -307,6 +327,7 @@ export function useFoodController(): FoodsController {
 		onCopyMeal,
 		getAIRequests,
 		removeFoodLog,
+		onClearHistory,
 		getFoodLog,
 		getRecents,
 		openFoodModal,
